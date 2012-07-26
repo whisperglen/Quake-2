@@ -123,6 +123,7 @@ cvar_t  *sw_stipplealpha;
 cvar_t	*sw_surfcacheoverride;
 cvar_t	*sw_waterwarp;
 
+
 cvar_t	*r_drawworld;
 cvar_t	*r_drawentities;
 cvar_t	*r_dspeeds;
@@ -139,6 +140,9 @@ cvar_t	*vid_gamma;
 //PGM
 cvar_t	*sw_lockpvs;
 //PGM
+
+//Fabien Sanglard: Control kernel texture sampling
+cvar_t	*sw_texfilt;
 
 #define	STRINGER(x) "x"
 
@@ -283,6 +287,8 @@ void R_Register (void)
 //PGM
 	sw_lockpvs = ri.Cvar_Get ("sw_lockpvs", "0", 0);
 //PGM
+
+	sw_texfilt = ri.Cvar_Get ("sw_texfilt", "0", 0);
 }
 
 void R_UnRegister (void)

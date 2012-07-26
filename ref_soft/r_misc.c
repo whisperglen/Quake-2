@@ -617,6 +617,7 @@ void WritePCXfile (char *filename, byte *data, int width, int height,
 R_ScreenShot_f
 ================== 
 */  
+/*
 void R_ScreenShot_f (void) 
 { 
 	int			i; 
@@ -667,4 +668,112 @@ void R_ScreenShot_f (void)
 
 	ri.Con_Printf (PRINT_ALL, "Wrote %s\n", checkname);
 } 
+*/
 
+void R_FCS_SaveAsTGA(char* path, byte* pixels)
+{
+	byte buffer[18];
+	FILE* f;
+	int c;
+	byte temp;
+	int i;
+
+	memset (buffer, 0, 18);
+	buffer[2] = 2;		// uncompressed type
+	buffer[12] = vid.width&255;
+	buffer[13] = vid.width>>8;
+	buffer[14] = vid.height&255;
+	buffer[15] = vid.height>>8;
+	buffer[16] = 24;	// pixel size
+
+	
+	
+	// swap rgb to bgr
+	c = vid.width*vid.height*3;
+	for (i=0 ; i<c ; i+=3)
+	{
+		temp = pixels[i];
+		pixels[i] = pixels[i+2];
+		pixels[i+2] = temp;
+	}
+
+
+	f = fopen (path, "wb");
+	fwrite (buffer, 1, 18, f);
+	fwrite (pixels, 1, vid.width*vid.height*3, f);
+
+	fclose (f);
+
+
+}
+
+// Fabien Sanglard version: Dropping the annoying PCX format 
+// that only GIMP can open and using TGA instead.
+void R_ScreenShot_f (void) 
+{ 
+	int			i;
+	int			j;
+	char		pcxname[80]; 
+	char		checkname[MAX_OSPATH];
+	FILE		*f;
+	
+	byte*       buffer;
+	byte*       rgbBuffer;
+	byte*       palBuffer;
+
+	rgbBuffer = buffer = malloc( vid.width * vid.height * 3);
+	 
+	//Convert from paletted to RBG in a buffer.
+	for(i=0 ; i < vid.height ; i++)
+	{
+		palBuffer = vid.buffer + vid.rowbytes * i ; 
+
+		for(j=0 ; j < vid.width ; j++)
+		{
+			rgbBuffer[2] = (d_8to24table[*palBuffer] & 0x00FF0000) >> 16;
+			rgbBuffer[1] = (d_8to24table[*palBuffer] & 0x0000FF00) >>  8;
+			rgbBuffer[0] = (d_8to24table[*palBuffer] & 0x000000FF) >>  0;
+			
+			palBuffer++;
+			rgbBuffer+=3 ;
+
+		}
+	}
+
+	//Still need to define the fullpath
+	memset(checkname,0,MAX_OSPATH);
+
+	// create the scrnshots directory if it doesn't exist
+	Com_sprintf (checkname, sizeof(checkname), "%s/scrnshot", ri.FS_Gamedir());
+	Sys_Mkdir (checkname);
+	
+	
+// 
+// find a file name to save it to 
+// 
+	strcpy(pcxname,"quake00.tga");
+		
+	for (i=0 ; i<=99 ; i++) 
+	{ 
+		pcxname[5] = i/10 + '0'; 
+		pcxname[6] = i%10 + '0'; 
+		Com_sprintf (checkname, sizeof(checkname), "%s/scrnshot/%s", ri.FS_Gamedir(), pcxname);
+		f = fopen (checkname, "r");
+		if (!f)
+			break;	// file doesn't exist
+		fclose (f);
+	} 
+	if (i==100) 
+	{
+		ri.Con_Printf (PRINT_ALL, "R_ScreenShot_f: Couldn't create a PCX"); 
+		return;
+	}
+
+
+// Write to storage media
+	R_FCS_SaveAsTGA(checkname,buffer);
+
+	ri.Con_Printf (PRINT_ALL, "Wrote %s\n", checkname);
+
+	free(buffer);
+} 
