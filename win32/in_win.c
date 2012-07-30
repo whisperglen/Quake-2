@@ -20,9 +20,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // in_win.c -- windows 95 mouse and joystick code
 // 02/21/97 JCB Added extended DirectInput code to support external controllers.
 
+
 #include "../client/client.h"
+
 #include "winquake.h"
 
+#include "in_motion_sensor.h"
 
 extern	unsigned	sys_msg_time;
 
@@ -382,6 +385,10 @@ void IN_Init (void)
 
 	IN_StartupMouse ();
 	IN_StartupJoystick ();
+
+	IN_MotionSensor_Init();
+
+
 }
 
 /*
@@ -442,6 +449,8 @@ void IN_Frame (void)
 	}
 
 	IN_ActivateMouse ();
+
+	IN_MotionSensor_Move();
 }
 
 /*
