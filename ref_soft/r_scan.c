@@ -392,14 +392,14 @@ void NonTurbulent8 (espan_t *pspan)
 
 int kernel[2][2][2] =
 {
-   {
-        {16384,0},
-        {49152,32768}
-   }
-   ,
-   {
-      {32768,49152},
-      {0,16384}
+        {
+                {16384,0},
+                {49152,16384}
+        }
+        ,
+        {
+                {32768,49152},
+                {0,32768}
    }
 };
 
@@ -536,6 +536,8 @@ void D_DrawSpans16 (espan_t *pspan)
 				}
 				else if (sw_texfilt->value == 1.0f)
 				{
+
+
 					do
 					{ 
 						int idiths = s;

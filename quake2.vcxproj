@@ -335,6 +335,7 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug Alpha|Win32'"> /QA21164 /MTd /QAieee1   /QA21164 /MTd /QAieee1 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release Alpha|Win32'"> /QA21164 /QAieee1   /QA21164 /QAieee1 </AdditionalOptions>
     </ClCompile>
+    <ClCompile Include="win32\in_motion_sensor.c" />
     <ClCompile Include="win32\in_win.c">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug Alpha|Win32'"> /QA21164 /MTd /QAieee1   /QA21164 /MTd /QAieee1 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release Alpha|Win32'"> /QA21164 /QAieee1   /QA21164 /QAieee1 </AdditionalOptions>
@@ -464,6 +465,7 @@
     <ClInclude Include="client\snd_loc.h" />
     <ClInclude Include="client\sound.h" />
     <ClInclude Include="client\vid.h" />
+    <ClInclude Include="win32\in_motion_sensor.h" />
     <ClInclude Include="win32\winquake.h" />
   </ItemGroup>
   <ItemGroup>
