@@ -288,7 +288,7 @@ void R_Register (void)
 	sw_lockpvs = ri.Cvar_Get ("sw_lockpvs", "0", 0);
 //PGM
 
-	sw_texfilt = ri.Cvar_Get ("sw_texfilt", "0", 0);
+	sw_texfilt = ri.Cvar_Get ("sw_texfilt", "1", 0);
 }
 
 void R_UnRegister (void)
