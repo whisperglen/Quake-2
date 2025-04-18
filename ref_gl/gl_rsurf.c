@@ -1042,6 +1042,203 @@ void R_RecursiveWorldNode (mnode_t *node)
 	if (node->contents == CONTENTS_SOLID)
 		return;		// solid
 
+	do {
+		if (node->visframe != r_visframecount)
+			return;
+		if (R_CullBox (node->minmaxs, node->minmaxs+3))
+			return;
+
+		// if a leaf node, draw stuff
+		if (node->contents != -1)
+		{
+			//pleaf = (mleaf_t *)node;
+
+			//// check for door connected areas
+			//if (r_newrefdef.areabits)
+			//{
+			//	if (! (r_newrefdef.areabits[pleaf->area>>3] & (1<<(pleaf->area&7)) ) )
+			//		return;		// not visible
+			//}
+
+			//mark = pleaf->firstmarksurface;
+			//c = pleaf->nummarksurfaces;
+
+			//if (c)
+			//{
+			//	do
+			//	{
+			//		(*mark)->visframe = r_framecount;
+			//		mark++;
+			//	} while (--c);
+			//}
+
+			//return;
+			break;
+		}
+
+		// node is just a decision point, so go down the apropriate sides
+
+		// find which side of the node we are on
+		//plane = node->plane;
+
+		//switch (plane->type)
+		//{
+		//case PLANE_X:
+		//	dot = modelorg[0] - plane->dist;
+		//	break;
+		//case PLANE_Y:
+		//	dot = modelorg[1] - plane->dist;
+		//	break;
+		//case PLANE_Z:
+		//	dot = modelorg[2] - plane->dist;
+		//	break;
+		//default:
+		//	dot = DotProduct (modelorg, plane->normal) - plane->dist;
+		//	break;
+		//}
+
+		//if (dot >= 0)
+		//{
+		//	side = 0;
+		//	sidebit = 0;
+		//}
+		//else
+		//{
+		//	side = 1;
+		//	sidebit = SURF_PLANEBACK;
+		//}
+
+		// recurse down the children, front side first
+		R_RecursiveWorldNode (node->children[0]);
+
+		// draw stuff
+		//for ( c = node->numsurfaces, surf = r_worldmodel->surfaces + node->firstsurface; c ; c--, surf++)
+		//{
+		//	if (surf->visframe != r_framecount)
+		//		continue;
+
+		//	if ( (surf->flags & SURF_PLANEBACK) != sidebit )
+		//		continue;		// wrong side
+
+		//	if (surf->texinfo->flags & SURF_SKY)
+		//	{	// just adds to visible sky bounds
+		//		R_AddSkySurface (surf);
+		//	}
+		//	else if (surf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
+		//	{	// add to the translucent chain
+		//		surf->texturechain = r_alpha_surfaces;
+		//		r_alpha_surfaces = surf;
+		//	}
+		//	else
+		//	{
+		//		if ( qglMTexCoord2fSGIS && !( surf->flags & SURF_DRAWTURB ) )
+		//		{
+		//			GL_RenderLightmappedPoly( surf );
+		//		}
+		//		else
+		//		{
+		//			// the polygon is visible, so add it to the texture
+		//			// sorted chain
+		//			// FIXME: this is a hack for animation
+		//			image = R_TextureAnimation (surf->texinfo);
+		//			surf->texturechain = image->texturechain;
+		//			image->texturechain = surf;
+		//		}
+		//	}
+		//}
+		
+		// tail recurse
+		node = node->children[1];
+	} while ( 1 );
+
+	// recurse down the back side
+	//R_RecursiveWorldNode (node->children[!side]);
+	/*
+	for ( ; c ; c--, surf++)
+	{
+	if (surf->visframe != r_framecount)
+	continue;
+
+	if ( (surf->flags & SURF_PLANEBACK) != sidebit )
+	continue;		// wrong side
+
+	if (surf->texinfo->flags & SURF_SKY)
+	{	// just adds to visible sky bounds
+	R_AddSkySurface (surf);
+	}
+	else if (surf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
+	{	// add to the translucent chain
+	//			surf->texturechain = alpha_surfaces;
+	//			alpha_surfaces = surf;
+	}
+	else
+	{
+	if ( qglMTexCoord2fSGIS && !( surf->flags & SURF_DRAWTURB ) )
+	{
+	GL_RenderLightmappedPoly( surf );
+	}
+	else
+	{
+	// the polygon is visible, so add it to the texture
+	// sorted chain
+	// FIXME: this is a hack for animation
+	image = R_TextureAnimation (surf->texinfo);
+	surf->texturechain = image->texturechain;
+	image->texturechain = surf;
+	}
+	}
+	}
+	*/
+	{
+		for ( c = node->numsurfaces, surf = r_worldmodel->surfaces + node->firstsurface; c ; c--, surf++)
+		{
+			if (surf->visframe != r_framecount)
+				continue;
+
+			//if ( (surf->flags & SURF_PLANEBACK) != sidebit )
+			//	continue;		// wrong side
+
+			if (surf->texinfo->flags & SURF_SKY)
+			{	// just adds to visible sky bounds
+				R_AddSkySurface (surf);
+			}
+			else if (surf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
+			{	// add to the translucent chain
+				surf->texturechain = r_alpha_surfaces;
+				r_alpha_surfaces = surf;
+			}
+			else
+			{
+				if ( qglMTexCoord2fSGIS && !( surf->flags & SURF_DRAWTURB ) )
+				{
+					GL_RenderLightmappedPoly( surf );
+				}
+				else
+				{
+					// the polygon is visible, so add it to the texture
+					// sorted chain
+					// FIXME: this is a hack for animation
+					image = R_TextureAnimation (surf->texinfo);
+					surf->texturechain = image->texturechain;
+					image->texturechain = surf;
+				}
+			}
+		}
+	}
+}
+
+void R_RecursiveWorldNode0 (mnode_t *node)
+{
+	int			c, side, sidebit;
+	cplane_t	*plane;
+	msurface_t	*surf, **mark;
+	mleaf_t		*pleaf;
+	float		dot;
+	image_t		*image;
+
+	if (node->contents == CONTENTS_SOLID)
+		return;		// solid
+
 	if (node->visframe != r_visframecount)
 		return;
 	if (R_CullBox (node->minmaxs, node->minmaxs+3))
