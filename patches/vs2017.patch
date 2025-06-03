@@ -1,0 +1,205 @@
+diff --git a/ctf/ctf.vcxproj b/ctf/ctf.vcxproj
+index 9d123bb..24ffe90 100644
+--- a/ctf/ctf.vcxproj
++++ b/ctf/ctf.vcxproj
+@@ -22,27 +22,28 @@
+     <SccProjectName />
+     <SccLocalPath />
+     <ProjectGuid>{5B3D706A-4825-E865-5739-963E9E1758D0}</ProjectGuid>
++    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+diff --git a/game/game.vcxproj b/game/game.vcxproj
+index f49afc1..b7d1dfb 100644
+--- a/game/game.vcxproj
++++ b/game/game.vcxproj
+@@ -26,31 +26,32 @@
+     <SccProjectName />
+     <SccLocalPath />
+     <ProjectGuid>{D1F2926B-5668-01CB-8504-34494E5D7D4B}</ProjectGuid>
++    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+diff --git a/quake2.vcxproj b/quake2.vcxproj
+index c4d33c9..e701324 100644
+--- a/quake2.vcxproj
++++ b/quake2.vcxproj
+@@ -26,31 +26,32 @@
+     <SccProjectName />
+     <SccLocalPath />
+     <ProjectGuid>{0093E157-9691-3A41-7274-BB2F4658BB05}</ProjectGuid>
++    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+diff --git a/ref_gl/ref_gl.vcxproj b/ref_gl/ref_gl.vcxproj
+index dc25a93..c13a3b4 100644
+--- a/ref_gl/ref_gl.vcxproj
++++ b/ref_gl/ref_gl.vcxproj
+@@ -26,31 +26,32 @@
+     <SccProjectName />
+     <SccLocalPath />
+     <ProjectGuid>{E076A42C-2F93-5D83-1082-EE2EC87BA60C}</ProjectGuid>
++    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+diff --git a/ref_soft/ref_soft.vcxproj b/ref_soft/ref_soft.vcxproj
+index 9f3391e..ffb29f3 100644
+--- a/ref_soft/ref_soft.vcxproj
++++ b/ref_soft/ref_soft.vcxproj
+@@ -26,31 +26,32 @@
+     <SccProjectName />
+     <SccLocalPath />
+     <ProjectGuid>{643FAAD2-53CC-08EF-95E6-45C082A7633C}</ProjectGuid>
++    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Alpha|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+-    <PlatformToolset>v142</PlatformToolset>
++    <PlatformToolset>v141</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
