@@ -356,7 +356,7 @@ int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 	{
 		if (p->dist <= emins[p->type])
 			return 1;
-		if (p->dist >= emaxs[p->type])
+		if (p->dist > emaxs[p->type])
 			return 2;
 		return 3;
 	}

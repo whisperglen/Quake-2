@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <intrin.h>
 
 //Note from Fabien: Disabling assembly optimizations everywere:
 #define C_ONLY 1
@@ -151,7 +152,8 @@ extern vec3_t vec3_origin;
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
 extern long Q_ftol( float f );
 #else
-#define Q_ftol( f ) ( long ) (f)
+//#define Q_ftol( f ) ( long ) (f) //WG: nobody wants float truncation
+#define Q_ftol( f ) _mm_cvt_ss2si( _mm_set1_ps(f) )
 #endif
 
 #define DotProduct(x,y)			(x[0]*y[0]+x[1]*y[1]+x[2]*y[2])
@@ -196,7 +198,7 @@ float LerpAngle (float a1, float a2, float frac);
 			1								\
 		:									\
 		(									\
-			((p)->dist >= (emaxs)[(p)->type])?\
+			((p)->dist > (emaxs)[(p)->type])?\
 				2							\
 			:								\
 				3							\

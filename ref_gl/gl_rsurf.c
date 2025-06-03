@@ -1030,7 +1030,7 @@ e->angles[2] = -e->angles[2];	// stupid quake bug
 R_RecursiveWorldNode
 ================
 */
-void R_RecursiveWorldNode (mnode_t *node)
+void R_RecursiveWorldNode_batch (mnode_t *node)
 {
 	int			c, side, sidebit;
 	cplane_t	*plane;
@@ -1109,7 +1109,7 @@ void R_RecursiveWorldNode (mnode_t *node)
 		//}
 
 		// recurse down the children, front side first
-		R_RecursiveWorldNode (node->children[0]);
+		R_RecursiveWorldNode_batch (node->children[0]);
 
 		// draw stuff
 		//for ( c = node->numsurfaces, surf = r_worldmodel->surfaces + node->firstsurface; c ; c--, surf++)
@@ -1227,7 +1227,7 @@ void R_RecursiveWorldNode (mnode_t *node)
 	}
 }
 
-void R_RecursiveWorldNode0 (mnode_t *node)
+void R_RecursiveWorldNode (mnode_t *node)
 {
 	int			c, side, sidebit;
 	cplane_t	*plane;
