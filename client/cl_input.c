@@ -470,6 +470,8 @@ void CL_SendCmd (void)
 
 	cl.cmd = *cmd;
 
+	SZ_Init (&buf, data, sizeof(data));
+
 	if (cls.state == ca_disconnected || cls.state == ca_connecting)
 		return;
 
@@ -488,8 +490,6 @@ void CL_SendCmd (void)
 		MSG_WriteByte (&cls.netchan.message, clc_userinfo);
 		MSG_WriteString (&cls.netchan.message, Cvar_Userinfo() );
 	}
-
-	SZ_Init (&buf, data, sizeof(data));
 
 	if (cmd->buttons && cl.cinematictime > 0 && !cl.attractloop 
 		&& cls.realtime - cl.cinematictime > 1000)
