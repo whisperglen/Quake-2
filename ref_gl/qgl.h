@@ -383,6 +383,7 @@ extern	void ( APIENTRY * qglUnlockArraysEXT) (void);
 
 extern	void ( APIENTRY * qglMTexCoord2fSGIS)( GLenum, GLfloat, GLfloat );
 extern	void ( APIENTRY * qglSelectTextureSGIS)( GLenum );
+extern	void ( APIENTRY * qglClientActiveTexture)( GLenum );
 
 #ifdef _WIN32
 
@@ -438,5 +439,8 @@ extern BOOL ( WINAPI * qwglSetDeviceGammaRampEXT ) ( const unsigned char *pRed, 
 
 #define GL_TEXTURE0_SGIS					0x835E
 #define GL_TEXTURE1_SGIS					0x835F
+
+#define GL_TEXTURE0_ARB                     0x84C0
+#define GL_TEXTURE1_ARB                     0x84C1
 
 #endif

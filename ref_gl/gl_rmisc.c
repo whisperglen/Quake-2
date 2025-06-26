@@ -175,7 +175,8 @@ void GL_Strings_f( void )
 */
 void GL_SetDefaultState( void )
 {
-	qglClearColor (1,0, 0.5 , 0.5);
+	//qglClearColor (1,0, 0.5 , 0.5);
+	GL_SET_CLEAR_CLR_GRAY();
 	qglCullFace(GL_FRONT);
 	qglEnable(GL_TEXTURE_2D);
 

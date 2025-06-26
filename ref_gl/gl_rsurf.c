@@ -696,6 +696,15 @@ void DrawTextureChains (void)
 	GL_TexEnv( GL_REPLACE );
 }
 
+#define MAX_VERTEXES 1000
+struct drawbuf_s
+{
+	float xyz[3];
+	float tex0[2];
+	float tex1[2];
+} g_drawbuff[MAX_VERTEXES];
+
+#define TexCoordCopy(a,b)			(b[0]=a[0],b[1]=a[1])
 
 static void GL_RenderLightmappedPoly( msurface_t *surf )
 {
@@ -784,33 +793,77 @@ dynamic:
 			if(scroll == 0.0)
 				scroll = -64.0;
 
+			int numvert = 0;
+			struct drawbuf_s* draw = g_drawbuff;
 			for ( p = surf->polys; p; p = p->chain )
 			{
 				v = p->verts[0];
-				qglBegin (GL_POLYGON);
+				//qglBegin (GL_POLYGON);
 				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
 				{
-					qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, (v[3]+scroll), v[4]);
-					qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
-					qglVertex3fv (v);
+					VectorCopy( v, draw->xyz );
+					draw->tex0[0] = v[3]+scroll;
+					draw->tex0[1] = v[4];
+					draw->tex1[0] = v[5];
+					draw->tex1[1] = v[6];
+					//qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, (v[3]+scroll), v[4]);
+					//qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
+					//qglVertex3fv (v);
+					numvert++;
+					draw++;
 				}
-				qglEnd ();
+				//qglEnd ();
 			}
+			qglEnableClientState(GL_VERTEX_ARRAY);
+			qglVertexPointer( 3, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].xyz );
+			qglClientActiveTexture( GL_TEXTURE0_ARB );
+			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex0);
+			qglClientActiveTexture( GL_TEXTURE1_ARB );
+			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex1);
+			qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglClientActiveTexture( GL_TEXTURE0_ARB );
+			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglDisableClientState( GL_VERTEX_ARRAY );
 		}
 		else
 		{
+			int numvert = 0;
+			struct drawbuf_s* draw = g_drawbuff;
 			for ( p = surf->polys; p; p = p->chain )
 			{
 				v = p->verts[0];
-				qglBegin (GL_POLYGON);
+				//qglBegin (GL_POLYGON);
 				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
 				{
-					qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, v[3], v[4]);
-					qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
-					qglVertex3fv (v);
+					VectorCopy( v, draw->xyz );
+					draw->tex0[0] = v[3];
+					draw->tex0[1] = v[4];
+					draw->tex1[0] = v[5];
+					draw->tex1[1] = v[6];
+					//qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, v[3], v[4]);
+					//qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
+					//qglVertex3fv (v);
+					numvert++;
+					draw++;
 				}
-				qglEnd ();
+				//qglEnd ();
 			}
+			qglEnableClientState(GL_VERTEX_ARRAY);
+			qglVertexPointer( 3, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].xyz );
+			qglClientActiveTexture( GL_TEXTURE0_ARB );
+			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex0);
+			qglClientActiveTexture( GL_TEXTURE1_ARB );
+			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex1);
+			qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglClientActiveTexture( GL_TEXTURE0_ARB );
+			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglDisableClientState( GL_VERTEX_ARRAY );
 		}
 //PGM
 //==========
@@ -832,35 +885,79 @@ dynamic:
 			if(scroll == 0.0)
 				scroll = -64.0;
 
+			int numvert = 0;
+			struct drawbuf_s* draw = g_drawbuff;
 			for ( p = surf->polys; p; p = p->chain )
 			{
 				v = p->verts[0];
-				qglBegin (GL_POLYGON);
+				//qglBegin (GL_POLYGON);
 				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
 				{
-					qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, (v[3]+scroll), v[4]);
-					qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
-					qglVertex3fv (v);
+					VectorCopy( v, draw->xyz );
+					draw->tex0[0] = v[3]+scroll;
+					draw->tex0[1] = v[4];
+					draw->tex1[0] = v[5];
+					draw->tex1[1] = v[6];
+					//qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, (v[3]+scroll), v[4]);
+					//qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
+					//qglVertex3fv (v);
+					numvert++;
+					draw++;
 				}
-				qglEnd ();
+				//qglEnd ();
 			}
+			qglEnableClientState(GL_VERTEX_ARRAY);
+			qglVertexPointer( 3, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].xyz );
+			qglClientActiveTexture( GL_TEXTURE0_ARB );
+			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex0);
+			qglClientActiveTexture( GL_TEXTURE1_ARB );
+			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex1);
+			qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglClientActiveTexture( GL_TEXTURE0_ARB );
+			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglDisableClientState( GL_VERTEX_ARRAY );
 		}
 		else
 		{
 //PGM
 //==========
+			int numvert = 0;
+			struct drawbuf_s* draw = g_drawbuff;
 			for ( p = surf->polys; p; p = p->chain )
 			{
 				v = p->verts[0];
-				qglBegin (GL_POLYGON);
+				//qglBegin (GL_POLYGON);
 				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
 				{
-					qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, v[3], v[4]);
-					qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
-					qglVertex3fv (v);
+					VectorCopy( v, draw->xyz );
+					draw->tex0[0] = v[3];
+					draw->tex0[1] = v[4];
+					draw->tex1[0] = v[5];
+					draw->tex1[1] = v[6];
+					//qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, v[3], v[4]);
+					//qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
+					//qglVertex3fv (v);
+					numvert++;
+					draw++;
 				}
-				qglEnd ();
+				//qglEnd ();
 			}
+			qglEnableClientState(GL_VERTEX_ARRAY);
+			qglVertexPointer( 3, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].xyz );
+			qglClientActiveTexture( GL_TEXTURE0_ARB );
+			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex0);
+			qglClientActiveTexture( GL_TEXTURE1_ARB );
+			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex1);
+			qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglClientActiveTexture( GL_TEXTURE0_ARB );
+			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglDisableClientState( GL_VERTEX_ARRAY );
 //==========
 //PGM
 		}
@@ -1025,6 +1122,8 @@ e->angles[2] = -e->angles[2];	// stupid quake bug
 =============================================================
 */
 
+void R_RecursiveWorldNode( mnode_t* node );
+
 /*
 ================
 R_RecursiveWorldNode
@@ -1051,26 +1150,26 @@ void R_RecursiveWorldNode_batch (mnode_t *node)
 		// if a leaf node, draw stuff
 		if (node->contents != -1)
 		{
-			//pleaf = (mleaf_t *)node;
+			pleaf = (mleaf_t *)node;
 
-			//// check for door connected areas
-			//if (r_newrefdef.areabits)
-			//{
-			//	if (! (r_newrefdef.areabits[pleaf->area>>3] & (1<<(pleaf->area&7)) ) )
-			//		return;		// not visible
-			//}
+			// check for door connected areas
+			if (r_newrefdef.areabits)
+			{
+				if (! (r_newrefdef.areabits[pleaf->area>>3] & (1<<(pleaf->area&7)) ) )
+					return;		// not visible
+			}
 
-			//mark = pleaf->firstmarksurface;
-			//c = pleaf->nummarksurfaces;
+			mark = pleaf->firstmarksurface;
+			c = pleaf->nummarksurfaces;
 
-			//if (c)
-			//{
-			//	do
-			//	{
-			//		(*mark)->visframe = r_framecount;
-			//		mark++;
-			//	} while (--c);
-			//}
+			if (c)
+			{
+				do
+				{
+					(*mark)->visframe = r_framecount;
+					mark++;
+				} while (--c);
+			}
 
 			//return;
 			break;
@@ -1146,49 +1245,14 @@ void R_RecursiveWorldNode_batch (mnode_t *node)
 		//		}
 		//	}
 		//}
+
+		// recurse down the back side
+		//R_RecursiveWorldNode_batch (node->children[!side]);
 		
 		// tail recurse
 		node = node->children[1];
 	} while ( 1 );
 
-	// recurse down the back side
-	//R_RecursiveWorldNode (node->children[!side]);
-	/*
-	for ( ; c ; c--, surf++)
-	{
-	if (surf->visframe != r_framecount)
-	continue;
-
-	if ( (surf->flags & SURF_PLANEBACK) != sidebit )
-	continue;		// wrong side
-
-	if (surf->texinfo->flags & SURF_SKY)
-	{	// just adds to visible sky bounds
-	R_AddSkySurface (surf);
-	}
-	else if (surf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
-	{	// add to the translucent chain
-	//			surf->texturechain = alpha_surfaces;
-	//			alpha_surfaces = surf;
-	}
-	else
-	{
-	if ( qglMTexCoord2fSGIS && !( surf->flags & SURF_DRAWTURB ) )
-	{
-	GL_RenderLightmappedPoly( surf );
-	}
-	else
-	{
-	// the polygon is visible, so add it to the texture
-	// sorted chain
-	// FIXME: this is a hack for animation
-	image = R_TextureAnimation (surf->texinfo);
-	surf->texturechain = image->texturechain;
-	image->texturechain = surf;
-	}
-	}
-	}
-	*/
 	{
 		for ( c = node->numsurfaces, surf = r_worldmodel->surfaces + node->firstsurface; c ; c--, surf++)
 		{
@@ -1233,7 +1297,7 @@ void R_RecursiveWorldNode (mnode_t *node)
 	cplane_t	*plane;
 	msurface_t	*surf, **mark;
 	mleaf_t		*pleaf;
-	float		dot;
+	float		dot = 0;
 	image_t		*image;
 
 	if (node->contents == CONTENTS_SOLID)
@@ -1272,24 +1336,26 @@ void R_RecursiveWorldNode (mnode_t *node)
 	}
 
 // node is just a decision point, so go down the apropriate sides
-
-// find which side of the node we are on
-	plane = node->plane;
-
-	switch (plane->type)
+	if ( !r_nocull->value )
 	{
-	case PLANE_X:
-		dot = modelorg[0] - plane->dist;
-		break;
-	case PLANE_Y:
-		dot = modelorg[1] - plane->dist;
-		break;
-	case PLANE_Z:
-		dot = modelorg[2] - plane->dist;
-		break;
-	default:
-		dot = DotProduct (modelorg, plane->normal) - plane->dist;
-		break;
+		// find which side of the node we are on
+		plane = node->plane;
+
+		switch (plane->type)
+		{
+		case PLANE_X:
+			dot = modelorg[0] - plane->dist;
+			break;
+		case PLANE_Y:
+			dot = modelorg[1] - plane->dist;
+			break;
+		case PLANE_Z:
+			dot = modelorg[2] - plane->dist;
+			break;
+		default:
+			dot = DotProduct (modelorg, plane->normal) - plane->dist;
+			break;
+		}
 	}
 
 	if (dot >= 0)
@@ -1342,44 +1408,54 @@ void R_RecursiveWorldNode (mnode_t *node)
 		}
 	}
 
-	// recurse down the back side
-	R_RecursiveWorldNode (node->children[!side]);
-/*
-	for ( ; c ; c--, surf++)
+
+	if ( !r_nocull->value )
 	{
-		if (surf->visframe != r_framecount)
-			continue;
+		// recurse down the back side
+		R_RecursiveWorldNode (node->children[!side]);
+	}
+	else
+	{
+		side = 1;
+		sidebit = SURF_PLANEBACK;
 
-		if ( (surf->flags & SURF_PLANEBACK) != sidebit )
-			continue;		// wrong side
+		R_RecursiveWorldNode( node->children[1] );
 
-		if (surf->texinfo->flags & SURF_SKY)
-		{	// just adds to visible sky bounds
-			R_AddSkySurface (surf);
-		}
-		else if (surf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
-		{	// add to the translucent chain
-//			surf->texturechain = alpha_surfaces;
-//			alpha_surfaces = surf;
-		}
-		else
+		for ( c = node->numsurfaces, surf = r_worldmodel->surfaces + node->firstsurface; c; c--, surf++ )
 		{
-			if ( qglMTexCoord2fSGIS && !( surf->flags & SURF_DRAWTURB ) )
-			{
-				GL_RenderLightmappedPoly( surf );
+			if (surf->visframe != r_framecount)
+				continue;
+
+			if ( (surf->flags & SURF_PLANEBACK) != sidebit )
+				continue;		// wrong side
+
+			if (surf->texinfo->flags & SURF_SKY)
+			{	// just adds to visible sky bounds
+				R_AddSkySurface (surf);
+			}
+			else if (surf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
+			{	// add to the translucent chain
+				surf->texturechain = r_alpha_surfaces;
+				r_alpha_surfaces = surf;
 			}
 			else
 			{
-				// the polygon is visible, so add it to the texture
-				// sorted chain
-				// FIXME: this is a hack for animation
-				image = R_TextureAnimation (surf->texinfo);
-				surf->texturechain = image->texturechain;
-				image->texturechain = surf;
+				if ( qglMTexCoord2fSGIS && !( surf->flags & SURF_DRAWTURB ) )
+				{
+					GL_RenderLightmappedPoly( surf );
+				}
+				else
+				{
+					// the polygon is visible, so add it to the texture
+					// sorted chain
+					// FIXME: this is a hack for animation
+					image = R_TextureAnimation (surf->texinfo);
+					surf->texturechain = image->texturechain;
+					image->texturechain = surf;
+				}
 			}
 		}
 	}
-*/
 }
 
 

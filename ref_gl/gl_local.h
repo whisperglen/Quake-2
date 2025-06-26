@@ -394,6 +394,10 @@ void GL_DrawParticles( int n, const particle_t particles[], const unsigned color
 #define GL_RENDERER_MCD			0x01000000
 #define GL_RENDERER_OTHER		0x80000000
 
+#define GL_SET_CLEAR_CLR_BLACK() qglClearColor( 0, 0, 0, 0 )
+#define GL_SET_CLEAR_CLR_GRAY() qglClearColor( 0.3, 0.3, 0.3, 1 )
+#define GL_SET_CLEAR_CLR_PINK() qglClearColor( 1, 0, 0.5, 0.5 )
+
 typedef struct
 {
 	int         renderer;

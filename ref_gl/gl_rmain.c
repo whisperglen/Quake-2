@@ -662,10 +662,12 @@ void R_SetupFrame (void)
 	if ( r_newrefdef.rdflags & RDF_NOWORLDMODEL )
 	{
 		qglEnable( GL_SCISSOR_TEST );
-		qglClearColor( 0.3, 0.3, 0.3, 1 );
+		//qglClearColor( 0.3, 0.3, 0.3, 1 );
+		GL_SET_CLEAR_CLR_GRAY();
 		qglScissor( r_newrefdef.x, vid.height - r_newrefdef.height - r_newrefdef.y, r_newrefdef.width, r_newrefdef.height );
 		qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		qglClearColor( 1, 0, 0.5, 0.5 );
+		//qglClearColor( 1, 0, 0.5, 0.5 );
+		GL_SET_CLEAR_CLR_PINK();
 		qglDisable( GL_SCISSOR_TEST );
 	}
 }
@@ -764,7 +766,14 @@ void R_Clear (void)
 		static int trickframe;
 
 		if (gl_clear->value)
+		{
+			if ( gl_clear->value > 1 )
+				GL_SET_CLEAR_CLR_BLACK();
+			else
+				GL_SET_CLEAR_CLR_PINK();
+
 			qglClear (GL_COLOR_BUFFER_BIT);
+		}
 
 		trickframe++;
 		if (trickframe & 1)
@@ -783,7 +792,14 @@ void R_Clear (void)
 	else
 	{
 		if (gl_clear->value)
+		{
+			if ( gl_clear->value > 1 )
+				GL_SET_CLEAR_CLR_BLACK();
+			else
+				GL_SET_CLEAR_CLR_PINK();
+
 			qglClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
 		else
 			qglClear (GL_DEPTH_BUFFER_BIT);
 		gldepthmin = 0;
@@ -1309,6 +1325,7 @@ int R_Init( void *hinstance, void *hWnd )
 			ri.Con_Printf( PRINT_ALL, "...using GL_SGIS_multitexture\n" );
 			qglMTexCoord2fSGIS = ( void * ) qwglGetProcAddress( "glMTexCoord2fSGIS" );
 			qglSelectTextureSGIS = ( void * ) qwglGetProcAddress( "glSelectTextureSGIS" );
+			qglClientActiveTexture = ( void * ) qwglGetProcAddress( "glClientActiveTextureARB" );
 		}
 		else
 		{
@@ -1338,6 +1355,8 @@ int R_Init( void *hinstance, void *hWnd )
 	err = qglGetError();
 	if ( err != GL_NO_ERROR )
 		ri.Con_Printf (PRINT_ALL, "glGetError() = 0x%x\n", err);
+
+	return 0;
 }
 
 /*
@@ -1522,9 +1541,11 @@ void R_SetPalette ( const unsigned char *palette)
 	}
 	GL_SetTexturePalette( r_rawpalette );
 
-	qglClearColor (0,0,0,0);
+	//qglClearColor (0,0,0,0);
+	GL_SET_CLEAR_CLR_BLACK();
 	qglClear (GL_COLOR_BUFFER_BIT);
-	qglClearColor (1,0, 0.5 , 0.5);
+	//qglClearColor (1,0, 0.5 , 0.5);
+	GL_SET_CLEAR_CLR_PINK();
 }
 
 /*
