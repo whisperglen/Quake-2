@@ -153,7 +153,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 
 	if ( gl_vertex_arrays->value )
 	{
-		float colorArray[MAX_VERTS*4];
+		static float colorArray[MAX_VERTS*4];
 
 		qglEnableClientState( GL_VERTEX_ARRAY );
 		qglVertexPointer( 3, GL_FLOAT, 16, s_lerped );	// padded for SIMD
@@ -672,7 +672,7 @@ void R_DrawAliasModel (entity_t *e)
 		float	scale;
 		float	min;
 
-		scale = 0.1 * sin(r_newrefdef.time*7);
+		scale = 0.1f * sin(r_newrefdef.time*7);
 		for (i=0 ; i<3 ; i++)
 		{
 			min = shadelight[i] * 0.8;
@@ -711,7 +711,7 @@ void R_DrawAliasModel (entity_t *e)
 	// draw all the triangles
 	//
 	if (currententity->flags & RF_DEPTHHACK) // hack the depth range to prevent view model from poking into walls
-		qglDepthRange (gldepthmin, gldepthmin + 0.3*(gldepthmax-gldepthmin));
+		qglDepthRange (gldepthmin, gldepthmin + 0.3f*(gldepthmax-gldepthmin));
 
 	if ( ( currententity->flags & RF_WEAPONMODEL ) && ( r_lefthand->value == 1.0F ) )
 	{

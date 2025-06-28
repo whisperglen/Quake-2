@@ -71,6 +71,8 @@ void SubdividePolygon (int numverts, float *verts)
 
 	BoundPoly (numverts, verts, mins, maxs);
 
+	dist[0] = 0;
+
 	for (i=0 ; i<3 ; i++)
 	{
 		m = (mins[i] + maxs[i]) * 0.5;

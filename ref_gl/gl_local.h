@@ -121,6 +121,14 @@ typedef enum
 
 #include "gl_model.h"
 
+#if 0
+#define QGL_PUSH_DEBUGGROUP(id, message) if(qglPushDebugGroup) qglPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, id, -1, message)
+#define QGL_POP_DEBUGGROUP() if(qglPopDebugGroup) qglPopDebugGroup()
+#else
+#define QGL_PUSH_DEBUGGROUP(id, message)
+#define QGL_POP_DEBUGGROUP()
+#endif
+
 void GL_BeginRendering (int *x, int *y, int *width, int *height);
 void GL_EndRendering (void);
 

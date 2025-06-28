@@ -761,7 +761,7 @@ typedef struct
 void R_FloodFillSkin( byte *skin, int skinwidth, int skinheight )
 {
 	byte				fillcolor = *skin; // assume this is the pixel to fill
-	floodfill_t			fifo[FLOODFILL_FIFO_SIZE];
+	static floodfill_t			fifo[FLOODFILL_FIFO_SIZE];
 	int					inpt = 0, outpt = 0;
 	int					filledcolor = -1;
 	int					i;
@@ -956,8 +956,8 @@ qboolean uploaded_paletted;
 qboolean GL_Upload32 (unsigned *data, int width, int height,  qboolean mipmap)
 {
 	int			samples;
-	unsigned	scaled[256*256];
-	unsigned char paletted_texture[256*256];
+	static unsigned	scaled[256*256];
+	static unsigned char paletted_texture[256*256];
 	int			scaled_width, scaled_height;
 	int			i, c;
 	byte		*scan;
@@ -1164,7 +1164,7 @@ static qboolean IsPowerOf2( int value )
 
 qboolean GL_Upload8 (byte *data, int width, int height,  qboolean mipmap, qboolean is_sky )
 {
-	unsigned	trans[512*256];
+	static unsigned	trans[512*256];
 	int			i, s;
 	int			p;
 
@@ -1284,10 +1284,10 @@ image_t *GL_LoadPic (char *name, byte *pic, int width, int height, imagetype_t t
 		image->texnum = TEXNUM_SCRAPS + texnum;
 		image->scrap = true;
 		image->has_alpha = true;
-		image->sl = (x+0.01)/(float)BLOCK_WIDTH;
-		image->sh = (x+image->width-0.01)/(float)BLOCK_WIDTH;
+		image->sl = (x+0.01f)/(float)BLOCK_WIDTH;
+		image->sh = (x+image->width-0.01f)/(float)BLOCK_WIDTH;
 		image->tl = (y+0.01)/(float)BLOCK_WIDTH;
-		image->th = (y+image->height-0.01)/(float)BLOCK_WIDTH;
+		image->th = (y+image->height-0.01f)/(float)BLOCK_WIDTH;
 	}
 	else
 	{

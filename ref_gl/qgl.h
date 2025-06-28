@@ -242,11 +242,13 @@ extern  void ( APIENTRY * qglPolygonOffset )(GLfloat factor, GLfloat units);
 extern  void ( APIENTRY * qglPolygonStipple )(const GLubyte *mask);
 extern  void ( APIENTRY * qglPopAttrib )(void);
 extern  void ( APIENTRY * qglPopClientAttrib )(void);
+extern  void ( APIENTRY * qglPopDebugGroup )(void);
 extern  void ( APIENTRY * qglPopMatrix )(void);
 extern  void ( APIENTRY * qglPopName )(void);
 extern  void ( APIENTRY * qglPrioritizeTextures )(GLsizei n, const GLuint *textures, const GLclampf *priorities);
 extern  void ( APIENTRY * qglPushAttrib )(GLbitfield mask);
 extern  void ( APIENTRY * qglPushClientAttrib )(GLbitfield mask);
+extern  void ( APIENTRY * qglPushDebugGroup )(GLenum source, GLuint id, GLsizei length, const GLbyte *message);
 extern  void ( APIENTRY * qglPushMatrix )(void);
 extern  void ( APIENTRY * qglPushName )(GLuint name);
 extern  void ( APIENTRY * qglRasterPos2d )(GLdouble x, GLdouble y);
@@ -442,5 +444,8 @@ extern BOOL ( WINAPI * qwglSetDeviceGammaRampEXT ) ( const unsigned char *pRed, 
 
 #define GL_TEXTURE0_ARB                     0x84C0
 #define GL_TEXTURE1_ARB                     0x84C1
+
+#define GL_DEBUG_SOURCE_THIRD_PARTY         0x8249
+#define GL_DEBUG_SOURCE_APPLICATION         0x824A
 
 #endif

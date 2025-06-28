@@ -275,9 +275,9 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 				for (i=0 ; i<3 ; i++)
 					scale[i] = gl_modulate->value*r_newrefdef.lightstyles[surf->styles[maps]].rgb[i];
 
-				pointcolor[0] += lightmap[0] * scale[0] * (1.0/255);
-				pointcolor[1] += lightmap[1] * scale[1] * (1.0/255);
-				pointcolor[2] += lightmap[2] * scale[2] * (1.0/255);
+				pointcolor[0] += lightmap[0] * scale[0] * (1.0f/255);
+				pointcolor[1] += lightmap[1] * scale[1] * (1.0f/255);
+				pointcolor[2] += lightmap[2] * scale[2] * (1.0f/255);
 				lightmap += 3*((surf->extents[0]>>4)+1) *
 						((surf->extents[1]>>4)+1);
 			}

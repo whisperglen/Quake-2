@@ -737,7 +737,7 @@ dynamic:
 
 	if ( is_dynamic )
 	{
-		unsigned	temp[128*128];
+		static unsigned	temp[128*128];
 		int			smax, tmax;
 
 		if ( ( surf->styles[map] >= 32 || surf->styles[map] == 0 ) && ( surf->dlightframe != r_framecount ) )
@@ -1502,13 +1502,17 @@ void R_DrawWorld (void)
 		else 
 			GL_TexEnv( GL_MODULATE );
 
+		QGL_PUSH_DEBUGGROUP( 2, "RecursiveWorldNode MT" );
 		R_RecursiveWorldNode (r_worldmodel->nodes);
+		QGL_POP_DEBUGGROUP();
 
 		GL_EnableMultitexture( false );
 	}
 	else
 	{
+		QGL_PUSH_DEBUGGROUP( 2, "RecursiveWorldNode ST" );
 		R_RecursiveWorldNode (r_worldmodel->nodes);
+		QGL_POP_DEBUGGROUP();
 	}
 
 	/*
@@ -1836,7 +1840,7 @@ void GL_BeginBuildingLightmaps (model_t *m)
 {
 	static lightstyle_t	lightstyles[MAX_LIGHTSTYLES];
 	int				i;
-	unsigned		dummy[128*128];
+	static unsigned		dummy[128*128] = { 0 };
 
 	memset( gl_lms.allocated, 0, sizeof(gl_lms.allocated) );
 

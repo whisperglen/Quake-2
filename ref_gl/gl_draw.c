@@ -227,13 +227,13 @@ void Draw_TileClear (int x, int y, int w, int h, char *pic)
 
 	GL_Bind (image->texnum);
 	qglBegin (GL_QUADS);
-	qglTexCoord2f (x/64.0, y/64.0);
+	qglTexCoord2f (x/64.0f, y/64.0f);
 	qglVertex2f (x, y);
-	qglTexCoord2f ( (x+w)/64.0, y/64.0);
+	qglTexCoord2f ( (x+w)/64.0f, y/64.0f);
 	qglVertex2f (x+w, y);
-	qglTexCoord2f ( (x+w)/64.0, (y+h)/64.0);
+	qglTexCoord2f ( (x+w)/64.0f, (y+h)/64.0f);
 	qglVertex2f (x+w, y+h);
-	qglTexCoord2f ( x/64.0, (y+h)/64.0 );
+	qglTexCoord2f ( x/64.0f, (y+h)/64.0f );
 	qglVertex2f (x, y+h);
 	qglEnd ();
 
@@ -318,8 +318,8 @@ extern unsigned	r_rawpalette[256];
 
 void Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data)
 {
-	unsigned	image32[256*256];
-	unsigned char image8[256*256];
+	static unsigned	image32[256*256];
+	static unsigned char image8[256*256];
 	int			i, j, trows;
 	byte		*source;
 	int			frac, fracstep;

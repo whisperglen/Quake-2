@@ -854,13 +854,21 @@ void R_RenderView (refdef_t *fd)
 
 	R_DrawWorld ();
 
+	QGL_PUSH_DEBUGGROUP( 2, "DrawEntitiesOnList" );
 	R_DrawEntitiesOnList ();
+	QGL_POP_DEBUGGROUP();
 
+	QGL_PUSH_DEBUGGROUP( 2, "RenderDlights" );
 	R_RenderDlights ();
+	QGL_POP_DEBUGGROUP();
 
+	QGL_PUSH_DEBUGGROUP( 2, "DrawParticles" );
 	R_DrawParticles ();
+	QGL_POP_DEBUGGROUP();
 
+	QGL_PUSH_DEBUGGROUP( 2, "DrawAlphaSurfaces" );
 	R_DrawAlphaSurfaces ();
+	QGL_POP_DEBUGGROUP();
 
 	R_Flash();
 
