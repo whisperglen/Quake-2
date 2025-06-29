@@ -696,19 +696,314 @@ void DrawTextureChains (void)
 	GL_TexEnv( GL_REPLACE );
 }
 
+typedef struct drawSurf_s {
+	unsigned    sort;
+	msurface_t *surface;
+} drawSurf_t;
+
+typedef struct {
+	drawSurf_t *surfs;
+	int         numSurfs;
+} surfList_t;
+
+#define MAX_DRAWSURFS           0x10000
+static drawSurf_t g_drawSurfs[MAX_DRAWSURFS];
+static surfList_t g_surfList = { g_drawSurfs, 0 };
+
+union sort_pack_u
+{
+	unsigned all;
+	struct {
+		unsigned dynamic : 1;
+		unsigned texnum : 15;
+		unsigned flowing : 1;
+		unsigned lightmap : 15;
+	} bits;
+};
+
+void R_AddDrawSurf(msurface_t *surf)
+{
+	int index;
+
+	index = g_surfList.numSurfs;
+	if ( index + 1 < MAX_DRAWSURFS )
+	{
+		union sort_pack_u sort = { 0 };
+
+		/** First check for dynamic light; these should go last in the list */
+		qboolean dynamic = false;
+		int map;
+		for ( map = 0; map < MAXLIGHTMAPS && surf->styles[map] != 255; map++ )
+		{
+			if ( r_newrefdef.lightstyles[surf->styles[map]].white != surf->cached_light[map] )
+			{
+				dynamic = true;
+				break;
+			}
+		}
+
+		// dynamic this frame or dynamic previously
+		if ( ( surf->dlightframe == r_framecount ) || dynamic )
+		{
+			if ( gl_dynamic->value )
+			{
+				if ( !(surf->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|SURF_WARP ) ) )
+				{
+					sort.bits.dynamic = 1;
+				}
+			}
+		}
+
+		sort.bits.texnum = R_TextureAnimation( surf->texinfo )->texnum;
+		sort.bits.flowing = surf->texinfo->flags & SURF_FLOWING;
+		sort.bits.lightmap = surf->lightmaptexturenum;
+
+		g_surfList.surfs[index].sort =  sort.all;
+		g_surfList.surfs[index].surface = surf;
+		g_surfList.numSurfs++;
+	}
+	else
+		ri.Con_Printf( PRINT_ALL, "Too many surfs\n" );
+}
+
+static int qsort_compare( const void *arg1, const void *arg2 )
+{
+	int ret = 0;
+
+	drawSurf_t* s1 = (drawSurf_t*)arg1;
+	drawSurf_t* s2 = (drawSurf_t*)arg2;
+
+	if ( (s1->sort ) > (s2->sort ) )
+	{
+		ret = 1;
+	}
+	else if ( (s1->sort ) < (s2->sort ) )
+	{
+		ret = -1;
+	}
+	else //equals
+	{
+		if ( s1->surface > s2->surface )
+		{
+			ret = 1;
+		}
+		else if ( s1->surface < s2->surface )
+		{
+			ret = -1;
+		}
+		else //equals
+		{
+		}
+	}
+
+	return ret;
+}
+
 #define MAX_VERTEXES 1000
-struct drawbuf_s
+#define MAX_INDEXES (6*MAX_VERTEXES)
+struct vertexData_s
 {
 	float xyz[3];
 	float tex0[2];
 	float tex1[2];
-} g_drawbuff[MAX_VERTEXES];
+};
 
-#define TexCoordCopy(a,b)			(b[0]=a[0],b[1]=a[1])
+struct drawbuff_s
+{
+	int numVertexes;
+	int numIndexes;
+	struct vertexData_s vertexes[MAX_VERTEXES];
+	unsigned short indexes[MAX_INDEXES];
+} g_drawBuff;
 
+void R_RenderSurfs( void )
+{
+	if ( g_drawBuff.numIndexes )
+	{
+		qglEnableClientState( GL_VERTEX_ARRAY );
+		qglVertexPointer( 3, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].xyz );
+		qglClientActiveTexture( GL_TEXTURE0_ARB );
+		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex0 );
+		qglClientActiveTexture( GL_TEXTURE1_ARB );
+		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex1 );
+		//qglDrawArrays( GL_POLYGON, 0, numvert );
+		qglDrawElements( GL_TRIANGLES, g_drawBuff.numIndexes, GL_UNSIGNED_SHORT, g_drawBuff.indexes );
+		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+		qglClientActiveTexture( GL_TEXTURE0_ARB );
+		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+		qglDisableClientState( GL_VERTEX_ARRAY );
+
+		g_drawBuff.numIndexes = 0;
+		g_drawBuff.numVertexes = 0;
+	}
+}
+
+void R_CheckDrawBufferSpace( int vertexes, int indexes )
+{
+	if ( g_drawBuff.numVertexes + vertexes > MAX_VERTEXES ||
+		g_drawBuff.numIndexes + indexes > MAX_INDEXES )
+	{
+		R_RenderSurfs();
+	}
+}
+
+void R_PopulateDrawBuffer( msurface_t* surf, qboolean is_dynamic, qboolean is_flowing )
+{
+	int i;
+	float *v;
+	glpoly_t *p;
+	float scroll = 0;
+
+	c_brush_polys++;
+
+	if ( is_flowing )
+	{
+		scroll = -64 * ( (r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0) );
+		if(scroll == 0.0)
+			scroll = -64.0;
+	}
+	
+	for ( p = surf->polys; p; p = p->chain )
+	{
+		int totalindexes = (3 * p->numverts) - 6;
+		R_CheckDrawBufferSpace( p->numverts, totalindexes );
+
+		int index = g_drawBuff.numVertexes;
+		struct vertexData_s* draw = &g_drawBuff.vertexes[g_drawBuff.numVertexes];
+		unsigned short* ibuf = &g_drawBuff.indexes[g_drawBuff.numIndexes];
+		unsigned short startidx = index;
+		v = p->verts[0];
+		for (i = 0 ; i < p->numverts; i++, v+= VERTEXSIZE)
+		{
+			if ( i > 2 )
+			{
+				ibuf[0] = startidx;
+				ibuf[1] = index - 1;
+				ibuf += 2;
+			}
+			ibuf[0] = index++;
+			VectorCopy( v, draw->xyz );
+			draw->tex0[0] = v[3]+scroll;
+			draw->tex0[1] = v[4];
+			draw->tex1[0] = v[5];
+			draw->tex1[1] = v[6];
+			draw++;
+			ibuf++;
+		}
+
+		g_drawBuff.numVertexes += p->numverts;
+		g_drawBuff.numIndexes += totalindexes;
+	}
+}
+
+static void GL_RenderLightmappedPoly( msurface_t* surf );
+
+void R_SortAndDrawSurfaces(drawSurf_t *surfs, int numSurfs)
+{
+	qsort( surfs, numSurfs, sizeof( drawSurf_t ), qsort_compare);
+
+	unsigned oldSort = ~0u;
+	//int oldDynamic = -1;
+	int oldTexnum = -1;
+	//int oldFlowing = -1;
+	int oldLightmap = -1;
+
+	union sort_pack_u sort;
+	drawSurf_t* s = surfs;
+	for ( int i = 0; i < numSurfs; i++, s++ )
+	{
+#if 0
+		GL_RenderLightmappedPoly( s->surface );
+#else
+
+		sort.all = s->sort;
+
+		if ( sort.bits.dynamic || oldTexnum != sort.bits.texnum || oldLightmap != sort.bits.lightmap )
+		{
+			//render what was accumulated so far, with the bound textures
+			R_RenderSurfs();
+		}
+
+		//check if new textures need to be bound
+		if ( sort.bits.dynamic )
+		{
+			int		map;
+			unsigned lmtex;
+			msurface_t* surf = s->surface;
+
+			for ( map = 0; map < MAXLIGHTMAPS && surf->styles[map] != 255; map++ )
+			{
+				if ( r_newrefdef.lightstyles[surf->styles[map]].white != surf->cached_light[map] )
+					break;
+			}
+
+			static unsigned	temp[128*128];
+			int			smax, tmax;
+
+			if ( ( surf->styles[map] >= 32 || surf->styles[map] == 0 ) && ( surf->dlightframe != r_framecount ) )
+			{
+				smax = (surf->extents[0]>>4)+1;
+				tmax = (surf->extents[1]>>4)+1;
+
+				R_BuildLightMap( surf, (void *)temp, smax*4 );
+				R_SetCacheState( surf );
+
+				GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + surf->lightmaptexturenum );
+
+				lmtex = surf->lightmaptexturenum;
+
+				qglTexSubImage2D( GL_TEXTURE_2D, 0,
+					surf->light_s, surf->light_t, 
+					smax, tmax, 
+					GL_LIGHTMAP_FORMAT, 
+					GL_UNSIGNED_BYTE, temp );
+
+			}
+			else
+			{
+				smax = (surf->extents[0]>>4)+1;
+				tmax = (surf->extents[1]>>4)+1;
+
+				R_BuildLightMap( surf, (void *)temp, smax*4 );
+
+				GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + 0 );
+
+				lmtex = 0;
+
+				qglTexSubImage2D( GL_TEXTURE_2D, 0,
+					surf->light_s, surf->light_t, 
+					smax, tmax, 
+					GL_LIGHTMAP_FORMAT, 
+					GL_UNSIGNED_BYTE, temp );
+
+			}
+
+			GL_MBind( GL_TEXTURE0_SGIS, sort.bits.texnum/*image->texnum*/ );
+			GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + lmtex );
+		}
+		else if( oldTexnum != sort.bits.texnum || oldLightmap != sort.bits.lightmap )
+		{
+			GL_MBind( GL_TEXTURE0_SGIS, sort.bits.texnum/*image->texnum*/ );
+			GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + sort.bits.lightmap/*lmtex*/ );
+		}
+		oldSort = sort.all;
+		oldTexnum = sort.bits.texnum;
+		oldLightmap = sort.bits.lightmap;
+
+		R_PopulateDrawBuffer( s->surface, sort.bits.dynamic, sort.bits.flowing );
+#endif
+	}
+
+	//one more call for the remaining vertices
+	R_RenderSurfs();
+}
+
+#if 0
 static void GL_RenderLightmappedPoly( msurface_t *surf )
 {
-	int		i, nv = surf->polys->numverts;
+	int		i;
 	int		map;
 	float	*v;
 	image_t *image = R_TextureAnimation( surf->texinfo );
@@ -794,13 +1089,23 @@ dynamic:
 				scroll = -64.0;
 
 			int numvert = 0;
-			struct drawbuf_s* draw = g_drawbuff;
+			int numindex = 0;
+			struct vertexData_s* draw = g_drawBuff.vertexes;
+			unsigned short* ibuf = g_drawBuff.indexes;
 			for ( p = surf->polys; p; p = p->chain )
 			{
+				unsigned short startidx = numindex;
 				v = p->verts[0];
 				//qglBegin (GL_POLYGON);
-				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
+				for (i=0 ; i< p->numverts; i++, v+= VERTEXSIZE)
 				{
+					if ( i > 2 )
+					{
+						ibuf[0] = startidx;
+						ibuf[1] = numindex - 1;
+						ibuf += 2;
+					}
+					ibuf[0] = numindex;
 					VectorCopy( v, draw->xyz );
 					draw->tex0[0] = v[3]+scroll;
 					draw->tex0[1] = v[4];
@@ -810,19 +1115,23 @@ dynamic:
 					//qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
 					//qglVertex3fv (v);
 					numvert++;
+					numindex++;
 					draw++;
+					ibuf++;
 				}
 				//qglEnd ();
 			}
+			int totalidxs = ibuf - g_drawBuff.indexes;
 			qglEnableClientState(GL_VERTEX_ARRAY);
-			qglVertexPointer( 3, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].xyz );
+			qglVertexPointer( 3, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].xyz );
 			qglClientActiveTexture( GL_TEXTURE0_ARB );
 			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex0);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex0);
 			qglClientActiveTexture( GL_TEXTURE1_ARB );
 			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex1);
-			qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex1);
+			//qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglDrawElements( GL_TRIANGLES, totalidxs, GL_UNSIGNED_SHORT, g_drawBuff.indexes );
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 			qglClientActiveTexture( GL_TEXTURE0_ARB );
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -831,13 +1140,23 @@ dynamic:
 		else
 		{
 			int numvert = 0;
-			struct drawbuf_s* draw = g_drawbuff;
+			int numindex = 0;
+			struct vertexData_s* draw = g_drawBuff.vertexes;
+			unsigned short* ibuf = g_drawBuff.indexes;
 			for ( p = surf->polys; p; p = p->chain )
 			{
+				unsigned short startidx = numindex;
 				v = p->verts[0];
 				//qglBegin (GL_POLYGON);
-				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
+				for (i=0 ; i< p->numverts; i++, v+= VERTEXSIZE)
 				{
+					if ( i > 2 )
+					{
+						ibuf[0] = startidx;
+						ibuf[1] = numindex - 1;
+						ibuf += 2;
+					}
+					ibuf[0] = numindex;
 					VectorCopy( v, draw->xyz );
 					draw->tex0[0] = v[3];
 					draw->tex0[1] = v[4];
@@ -847,19 +1166,23 @@ dynamic:
 					//qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
 					//qglVertex3fv (v);
 					numvert++;
+					numindex++;
 					draw++;
+					ibuf++;
 				}
 				//qglEnd ();
 			}
+			int totalidxs = ibuf - g_drawBuff.indexes;
 			qglEnableClientState(GL_VERTEX_ARRAY);
-			qglVertexPointer( 3, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].xyz );
+			qglVertexPointer( 3, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].xyz );
 			qglClientActiveTexture( GL_TEXTURE0_ARB );
 			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex0);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex0);
 			qglClientActiveTexture( GL_TEXTURE1_ARB );
 			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex1);
-			qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex1);
+			//qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglDrawElements( GL_TRIANGLES, totalidxs, GL_UNSIGNED_SHORT, g_drawBuff.indexes );
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 			qglClientActiveTexture( GL_TEXTURE0_ARB );
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -886,13 +1209,23 @@ dynamic:
 				scroll = -64.0;
 
 			int numvert = 0;
-			struct drawbuf_s* draw = g_drawbuff;
+			int numindex = 0;
+			struct vertexData_s* draw = g_drawBuff.vertexes;
+			unsigned short* ibuf = g_drawBuff.indexes;
 			for ( p = surf->polys; p; p = p->chain )
 			{
+				unsigned short startidx = numindex;
 				v = p->verts[0];
 				//qglBegin (GL_POLYGON);
-				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
+				for (i=0 ; i< p->numverts; i++, v+= VERTEXSIZE)
 				{
+					if ( i > 2 )
+					{
+						ibuf[0] = startidx;
+						ibuf[1] = numindex - 1;
+						ibuf += 2;
+					}
+					ibuf[0] = numindex;
 					VectorCopy( v, draw->xyz );
 					draw->tex0[0] = v[3]+scroll;
 					draw->tex0[1] = v[4];
@@ -902,19 +1235,23 @@ dynamic:
 					//qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
 					//qglVertex3fv (v);
 					numvert++;
+					numindex++;
 					draw++;
+					ibuf++;
 				}
 				//qglEnd ();
 			}
+			int totalidxs = ibuf - g_drawBuff.indexes;
 			qglEnableClientState(GL_VERTEX_ARRAY);
-			qglVertexPointer( 3, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].xyz );
+			qglVertexPointer( 3, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].xyz );
 			qglClientActiveTexture( GL_TEXTURE0_ARB );
 			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex0);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex0);
 			qglClientActiveTexture( GL_TEXTURE1_ARB );
 			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex1);
-			qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex1);
+			//qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglDrawElements( GL_TRIANGLES, totalidxs, GL_UNSIGNED_SHORT, g_drawBuff.indexes );
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 			qglClientActiveTexture( GL_TEXTURE0_ARB );
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -925,13 +1262,23 @@ dynamic:
 //PGM
 //==========
 			int numvert = 0;
-			struct drawbuf_s* draw = g_drawbuff;
+			int numindex = 0;
+			struct vertexData_s* draw = g_drawBuff.vertexes;
+			unsigned short* ibuf = g_drawBuff.indexes;
 			for ( p = surf->polys; p; p = p->chain )
 			{
+				unsigned short startidx = numindex;
 				v = p->verts[0];
 				//qglBegin (GL_POLYGON);
-				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
+				for (i=0 ; i< p->numverts; i++, v+= VERTEXSIZE)
 				{
+					if ( i > 2 )
+					{
+						ibuf[0] = startidx;
+						ibuf[1] = numindex - 1;
+						ibuf += 2;
+					}
+					ibuf[0] = numindex;
 					VectorCopy( v, draw->xyz );
 					draw->tex0[0] = v[3];
 					draw->tex0[1] = v[4];
@@ -941,19 +1288,23 @@ dynamic:
 					//qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
 					//qglVertex3fv (v);
 					numvert++;
+					numindex++;
 					draw++;
+					ibuf++;
 				}
 				//qglEnd ();
 			}
+			int totalidxs = ibuf - g_drawBuff.indexes;
 			qglEnableClientState(GL_VERTEX_ARRAY);
-			qglVertexPointer( 3, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].xyz );
+			qglVertexPointer( 3, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].xyz );
 			qglClientActiveTexture( GL_TEXTURE0_ARB );
 			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex0);
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex0);
 			qglClientActiveTexture( GL_TEXTURE1_ARB );
 			qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct drawbuf_s ), g_drawbuff[0].tex1);
-			qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex1);
+			//qglDrawArrays( GL_POLYGON, 0, numvert );
+			qglDrawElements( GL_TRIANGLES, totalidxs, GL_UNSIGNED_SHORT, g_drawBuff.indexes );
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 			qglClientActiveTexture( GL_TEXTURE0_ARB );
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -965,6 +1316,179 @@ dynamic:
 //==========
 	}
 }
+#else
+static void GL_RenderLightmappedPoly( msurface_t *surf )
+{
+	int		i, nv = surf->polys->numverts;
+	int		map;
+	float	*v;
+	image_t *image = R_TextureAnimation( surf->texinfo );
+	qboolean is_dynamic = false;
+	unsigned lmtex = surf->lightmaptexturenum;
+	glpoly_t *p;
+
+	for ( map = 0; map < MAXLIGHTMAPS && surf->styles[map] != 255; map++ )
+	{
+		if ( r_newrefdef.lightstyles[surf->styles[map]].white != surf->cached_light[map] )
+			goto dynamic;
+	}
+
+	// dynamic this frame or dynamic previously
+	if ( ( surf->dlightframe == r_framecount ) )
+	{
+	dynamic:
+		if ( gl_dynamic->value )
+		{
+			if ( !(surf->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|SURF_WARP ) ) )
+			{
+				is_dynamic = true;
+			}
+		}
+	}
+
+	if ( is_dynamic )
+	{
+		unsigned	temp[128*128];
+		int			smax, tmax;
+
+		if ( ( surf->styles[map] >= 32 || surf->styles[map] == 0 ) && ( surf->dlightframe != r_framecount ) )
+		{
+			smax = (surf->extents[0]>>4)+1;
+			tmax = (surf->extents[1]>>4)+1;
+
+			R_BuildLightMap( surf, (void *)temp, smax*4 );
+			R_SetCacheState( surf );
+
+			GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + surf->lightmaptexturenum );
+
+			lmtex = surf->lightmaptexturenum;
+
+			qglTexSubImage2D( GL_TEXTURE_2D, 0,
+				surf->light_s, surf->light_t, 
+				smax, tmax, 
+				GL_LIGHTMAP_FORMAT, 
+				GL_UNSIGNED_BYTE, temp );
+
+		}
+		else
+		{
+			smax = (surf->extents[0]>>4)+1;
+			tmax = (surf->extents[1]>>4)+1;
+
+			R_BuildLightMap( surf, (void *)temp, smax*4 );
+
+			GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + 0 );
+
+			lmtex = 0;
+
+			qglTexSubImage2D( GL_TEXTURE_2D, 0,
+				surf->light_s, surf->light_t, 
+				smax, tmax, 
+				GL_LIGHTMAP_FORMAT, 
+				GL_UNSIGNED_BYTE, temp );
+
+		}
+
+		c_brush_polys++;
+
+		GL_MBind( GL_TEXTURE0_SGIS, image->texnum );
+		GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + lmtex );
+
+		//==========
+		//PGM
+		if (surf->texinfo->flags & SURF_FLOWING)
+		{
+			float scroll;
+
+			scroll = -64 * ( (r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0) );
+			if(scroll == 0.0)
+				scroll = -64.0;
+
+			for ( p = surf->polys; p; p = p->chain )
+			{
+				v = p->verts[0];
+				qglBegin (GL_POLYGON);
+				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
+				{
+					qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, (v[3]+scroll), v[4]);
+					qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
+					qglVertex3fv (v);
+				}
+				qglEnd ();
+			}
+		}
+		else
+		{
+			for ( p = surf->polys; p; p = p->chain )
+			{
+				v = p->verts[0];
+				qglBegin (GL_POLYGON);
+				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
+				{
+					qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, v[3], v[4]);
+					qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
+					qglVertex3fv (v);
+				}
+				qglEnd ();
+			}
+		}
+		//PGM
+		//==========
+	}
+	else
+	{
+		c_brush_polys++;
+
+		GL_MBind( GL_TEXTURE0_SGIS, image->texnum );
+		GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + lmtex );
+
+		//==========
+		//PGM
+		if (surf->texinfo->flags & SURF_FLOWING)
+		{
+			float scroll;
+
+			scroll = -64 * ( (r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0) );
+			if(scroll == 0.0)
+				scroll = -64.0;
+
+			for ( p = surf->polys; p; p = p->chain )
+			{
+				v = p->verts[0];
+				qglBegin (GL_POLYGON);
+				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
+				{
+					qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, (v[3]+scroll), v[4]);
+					qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
+					qglVertex3fv (v);
+				}
+				qglEnd ();
+			}
+		}
+		else
+		{
+			//PGM
+			//==========
+			for ( p = surf->polys; p; p = p->chain )
+			{
+				v = p->verts[0];
+				qglBegin (GL_POLYGON);
+				for (i=0 ; i< nv; i++, v+= VERTEXSIZE)
+				{
+					qglMTexCoord2fSGIS( GL_TEXTURE0_SGIS, v[3], v[4]);
+					qglMTexCoord2fSGIS( GL_TEXTURE1_SGIS, v[5], v[6]);
+					qglVertex3fv (v);
+				}
+				qglEnd ();
+			}
+			//==========
+			//PGM
+		}
+		//PGM
+		//==========
+	}
+}
+#endif
 
 /*
 =================
@@ -1096,11 +1620,11 @@ void R_DrawBrushModel (entity_t *e)
 	}
 
     qglPushMatrix ();
-e->angles[0] = -e->angles[0];	// stupid quake bug
-e->angles[2] = -e->angles[2];	// stupid quake bug
+	e->angles[0] = -e->angles[0];	// stupid quake bug
+	e->angles[2] = -e->angles[2];	// stupid quake bug
 	R_RotateForEntity (e);
-e->angles[0] = -e->angles[0];	// stupid quake bug
-e->angles[2] = -e->angles[2];	// stupid quake bug
+	e->angles[0] = -e->angles[0];	// stupid quake bug
+	e->angles[2] = -e->angles[2];	// stupid quake bug
 
 	GL_EnableMultitexture( true );
 	GL_SelectTexture( GL_TEXTURE0_SGIS );
@@ -1297,7 +1821,7 @@ void R_RecursiveWorldNode (mnode_t *node)
 	cplane_t	*plane;
 	msurface_t	*surf, **mark;
 	mleaf_t		*pleaf;
-	float		dot = 0;
+	float		dot;
 	image_t		*image;
 
 	if (node->contents == CONTENTS_SOLID)
@@ -1307,8 +1831,8 @@ void R_RecursiveWorldNode (mnode_t *node)
 		return;
 	if (R_CullBox (node->minmaxs, node->minmaxs+3))
 		return;
-	
-// if a leaf node, draw stuff
+
+	// if a leaf node, draw stuff
 	if (node->contents != -1)
 	{
 		pleaf = (mleaf_t *)node;
@@ -1335,27 +1859,25 @@ void R_RecursiveWorldNode (mnode_t *node)
 		return;
 	}
 
-// node is just a decision point, so go down the apropriate sides
-	if ( !r_nocull->value )
-	{
-		// find which side of the node we are on
-		plane = node->plane;
+	// node is just a decision point, so go down the apropriate sides
 
-		switch (plane->type)
-		{
-		case PLANE_X:
-			dot = modelorg[0] - plane->dist;
-			break;
-		case PLANE_Y:
-			dot = modelorg[1] - plane->dist;
-			break;
-		case PLANE_Z:
-			dot = modelorg[2] - plane->dist;
-			break;
-		default:
-			dot = DotProduct (modelorg, plane->normal) - plane->dist;
-			break;
-		}
+	// find which side of the node we are on
+	plane = node->plane;
+
+	switch (plane->type)
+	{
+	case PLANE_X:
+		dot = modelorg[0] - plane->dist;
+		break;
+	case PLANE_Y:
+		dot = modelorg[1] - plane->dist;
+		break;
+	case PLANE_Z:
+		dot = modelorg[2] - plane->dist;
+		break;
+	default:
+		dot = DotProduct (modelorg, plane->normal) - plane->dist;
+		break;
 	}
 
 	if (dot >= 0)
@@ -1369,7 +1891,7 @@ void R_RecursiveWorldNode (mnode_t *node)
 		sidebit = SURF_PLANEBACK;
 	}
 
-// recurse down the children, front side first
+	// recurse down the children, front side first
 	R_RecursiveWorldNode (node->children[side]);
 
 	// draw stuff
@@ -1394,7 +1916,8 @@ void R_RecursiveWorldNode (mnode_t *node)
 		{
 			if ( qglMTexCoord2fSGIS && !( surf->flags & SURF_DRAWTURB ) )
 			{
-				GL_RenderLightmappedPoly( surf );
+				//GL_RenderLightmappedPoly( surf );
+				R_AddDrawSurf( surf );
 			}
 			else
 			{
@@ -1408,20 +1931,21 @@ void R_RecursiveWorldNode (mnode_t *node)
 		}
 	}
 
-
-	if ( !r_nocull->value )
+	// recurse down the back side
+	R_RecursiveWorldNode (node->children[!side]);
+	if ( r_nocull->value )
 	{
-		// recurse down the back side
-		R_RecursiveWorldNode (node->children[!side]);
-	}
-	else
-	{
-		side = 1;
-		sidebit = SURF_PLANEBACK;
+		//switch sidebit value
+		if ( side == 0 )
+		{
+			sidebit = SURF_PLANEBACK;
+		}
+		else
+		{
+			sidebit = 0;
+		}
 
-		R_RecursiveWorldNode( node->children[1] );
-
-		for ( c = node->numsurfaces, surf = r_worldmodel->surfaces + node->firstsurface; c; c--, surf++ )
+		for ( c = node->numsurfaces, surf = r_worldmodel->surfaces + node->firstsurface; c ; c--, surf++)
 		{
 			if (surf->visframe != r_framecount)
 				continue;
@@ -1435,6 +1959,7 @@ void R_RecursiveWorldNode (mnode_t *node)
 			}
 			else if (surf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
 			{	// add to the translucent chain
+				// WG: this caused issues with remix, consider commenting on the back side
 				surf->texturechain = r_alpha_surfaces;
 				r_alpha_surfaces = surf;
 			}
@@ -1442,7 +1967,8 @@ void R_RecursiveWorldNode (mnode_t *node)
 			{
 				if ( qglMTexCoord2fSGIS && !( surf->flags & SURF_DRAWTURB ) )
 				{
-					GL_RenderLightmappedPoly( surf );
+					//GL_RenderLightmappedPoly( surf );
+					R_AddDrawSurf( surf );
 				}
 				else
 				{
@@ -1488,6 +2014,7 @@ void R_DrawWorld (void)
 	qglColor3f (1,1,1);
 	memset (gl_lms.lightmap_surfaces, 0, sizeof(gl_lms.lightmap_surfaces));
 	R_ClearSkyBox ();
+	g_surfList.numSurfs = 0;
 
 	if ( qglMTexCoord2fSGIS )
 	{
@@ -1505,6 +2032,8 @@ void R_DrawWorld (void)
 		QGL_PUSH_DEBUGGROUP( 2, "RecursiveWorldNode MT" );
 		R_RecursiveWorldNode (r_worldmodel->nodes);
 		QGL_POP_DEBUGGROUP();
+
+		R_SortAndDrawSurfaces( g_surfList.surfs, g_surfList.numSurfs );
 
 		GL_EnableMultitexture( false );
 	}

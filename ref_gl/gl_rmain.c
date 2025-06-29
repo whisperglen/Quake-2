@@ -852,7 +852,9 @@ void R_RenderView (refdef_t *fd)
 
 	R_MarkLeaves ();	// done here so we know if we're in water
 
+	QGL_PUSH_DEBUGGROUP( 2, "DrawWorld" );
 	R_DrawWorld ();
+	QGL_POP_DEBUGGROUP();
 
 	QGL_PUSH_DEBUGGROUP( 2, "DrawEntitiesOnList" );
 	R_DrawEntitiesOnList ();

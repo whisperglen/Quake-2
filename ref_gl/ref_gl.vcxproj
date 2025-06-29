@@ -63,6 +63,7 @@
       <ObjectFileName>.\debug\</ObjectFileName>
       <ProgramDataBaseFileName>.\debug\</ProgramDataBaseFileName>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalOptions>/wd4996 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -104,6 +105,7 @@
       <ObjectFileName>.\release\</ObjectFileName>
       <ProgramDataBaseFileName>.\release\</ProgramDataBaseFileName>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalOptions>/wd4996 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
