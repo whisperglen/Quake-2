@@ -701,23 +701,24 @@ typedef struct drawSurf_s {
 	msurface_t *surface;
 } drawSurf_t;
 
+#define MAX_DRAWSURFS           0x10000
 typedef struct {
-	drawSurf_t *surfs;
 	int         numSurfs;
+	drawSurf_t  surfs[MAX_DRAWSURFS];
 } surfList_t;
 
-#define MAX_DRAWSURFS           0x10000
-static drawSurf_t g_drawSurfs[MAX_DRAWSURFS];
-static surfList_t g_surfList = { g_drawSurfs, 0 };
+static surfList_t g_surfList = { 0 };
+
+#define SKIP_LIGHTMAP 0x7fffu
 
 union sort_pack_u
 {
 	unsigned all;
 	struct {
-		unsigned dynamic : 1;
-		unsigned texnum : 15;
-		unsigned flowing : 1;
 		unsigned lightmap : 15;
+		unsigned flowing : 1;
+		unsigned texnum : 15;
+		unsigned dynamic : 1;
 	} bits;
 };
 
@@ -756,7 +757,10 @@ void R_AddDrawSurf(msurface_t *surf)
 
 		sort.bits.texnum = R_TextureAnimation( surf->texinfo )->texnum;
 		sort.bits.flowing = surf->texinfo->flags & SURF_FLOWING;
-		sort.bits.lightmap = surf->lightmaptexturenum;
+		if( gl_skiplightmaps->value )
+			sort.bits.lightmap = SKIP_LIGHTMAP;
+		else
+			sort.bits.lightmap = surf->lightmaptexturenum;
 
 		g_surfList.surfs[index].sort =  sort.all;
 		g_surfList.surfs[index].surface = surf;
@@ -799,7 +803,7 @@ static int qsort_compare( const void *arg1, const void *arg2 )
 	return ret;
 }
 
-#define MAX_VERTEXES 1000
+#define MAX_VERTEXES 4000
 #define MAX_INDEXES (6*MAX_VERTEXES)
 struct vertexData_s
 {
@@ -816,22 +820,30 @@ struct drawbuff_s
 	unsigned short indexes[MAX_INDEXES];
 } g_drawBuff;
 
-void R_RenderSurfs( void )
+void R_RenderSurfs( qboolean two_textures )
 {
 	if ( g_drawBuff.numIndexes )
 	{
+		c_brush_polys++;
+
 		qglEnableClientState( GL_VERTEX_ARRAY );
 		qglVertexPointer( 3, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].xyz );
 		qglClientActiveTexture( GL_TEXTURE0_ARB );
 		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex0 );
-		qglClientActiveTexture( GL_TEXTURE1_ARB );
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-		qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex1 );
+		if ( two_textures )
+		{
+			qglClientActiveTexture( GL_TEXTURE1_ARB );
+			qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex1 );
+		}
 		//qglDrawArrays( GL_POLYGON, 0, numvert );
 		qglDrawElements( GL_TRIANGLES, g_drawBuff.numIndexes, GL_UNSIGNED_SHORT, g_drawBuff.indexes );
-		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
-		qglClientActiveTexture( GL_TEXTURE0_ARB );
+		if ( two_textures )
+		{
+			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			qglClientActiveTexture( GL_TEXTURE0_ARB );
+		}
 		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 		qglDisableClientState( GL_VERTEX_ARRAY );
 
@@ -840,23 +852,23 @@ void R_RenderSurfs( void )
 	}
 }
 
-void R_CheckDrawBufferSpace( int vertexes, int indexes )
+void R_CheckDrawBufferSpace( int vertexes, int indexes, qboolean two_textures )
 {
 	if ( g_drawBuff.numVertexes + vertexes > MAX_VERTEXES ||
 		g_drawBuff.numIndexes + indexes > MAX_INDEXES )
 	{
-		R_RenderSurfs();
+		R_RenderSurfs(two_textures);
 	}
 }
 
-void R_PopulateDrawBuffer( msurface_t* surf, qboolean is_dynamic, qboolean is_flowing )
+void R_PopulateDrawBuffer( msurface_t* surf, qboolean is_dynamic, qboolean is_flowing, qboolean two_textures )
 {
 	int i;
 	float *v;
 	glpoly_t *p;
 	float scroll = 0;
 
-	c_brush_polys++;
+	//c_brush_polys++; //let's use this to count drawcalls
 
 	if ( is_flowing )
 	{
@@ -868,7 +880,7 @@ void R_PopulateDrawBuffer( msurface_t* surf, qboolean is_dynamic, qboolean is_fl
 	for ( p = surf->polys; p; p = p->chain )
 	{
 		int totalindexes = (3 * p->numverts) - 6;
-		R_CheckDrawBufferSpace( p->numverts, totalindexes );
+		R_CheckDrawBufferSpace( p->numverts, totalindexes, two_textures );
 
 		int index = g_drawBuff.numVertexes;
 		struct vertexData_s* draw = &g_drawBuff.vertexes[g_drawBuff.numVertexes];
@@ -909,6 +921,7 @@ void R_SortAndDrawSurfaces(drawSurf_t *surfs, int numSurfs)
 	int oldTexnum = -1;
 	//int oldFlowing = -1;
 	int oldLightmap = -1;
+	qboolean two_textures = false;
 
 	union sort_pack_u sort;
 	drawSurf_t* s = surfs;
@@ -923,7 +936,7 @@ void R_SortAndDrawSurfaces(drawSurf_t *surfs, int numSurfs)
 		if ( sort.bits.dynamic || oldTexnum != sort.bits.texnum || oldLightmap != sort.bits.lightmap )
 		{
 			//render what was accumulated so far, with the bound textures
-			R_RenderSurfs();
+			R_RenderSurfs(two_textures);
 		}
 
 		//check if new textures need to be bound
@@ -982,22 +995,28 @@ void R_SortAndDrawSurfaces(drawSurf_t *surfs, int numSurfs)
 
 			GL_MBind( GL_TEXTURE0_SGIS, sort.bits.texnum/*image->texnum*/ );
 			GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + lmtex );
+			two_textures = true;
 		}
 		else if( oldTexnum != sort.bits.texnum || oldLightmap != sort.bits.lightmap )
 		{
+			two_textures = false;
 			GL_MBind( GL_TEXTURE0_SGIS, sort.bits.texnum/*image->texnum*/ );
-			GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + sort.bits.lightmap/*lmtex*/ );
+			if ( SKIP_LIGHTMAP != sort.bits.lightmap )
+			{
+				GL_MBind( GL_TEXTURE1_SGIS, gl_state.lightmap_textures + sort.bits.lightmap/*lmtex*/ );
+				two_textures = true;
+			}
 		}
 		oldSort = sort.all;
 		oldTexnum = sort.bits.texnum;
 		oldLightmap = sort.bits.lightmap;
 
-		R_PopulateDrawBuffer( s->surface, sort.bits.dynamic, sort.bits.flowing );
+		R_PopulateDrawBuffer( s->surface, sort.bits.dynamic, sort.bits.flowing, two_textures );
 #endif
 	}
 
 	//one more call for the remaining vertices
-	R_RenderSurfs();
+	R_RenderSurfs(two_textures);
 }
 
 #if 0
@@ -2032,6 +2051,9 @@ void R_DrawWorld (void)
 		QGL_PUSH_DEBUGGROUP( 2, "RecursiveWorldNode MT" );
 		R_RecursiveWorldNode (r_worldmodel->nodes);
 		QGL_POP_DEBUGGROUP();
+
+		if ( gl_skiplightmaps->value )
+			GL_EnableMultitexture( false );
 
 		R_SortAndDrawSurfaces( g_surfList.surfs, g_surfList.numSurfs );
 

@@ -524,7 +524,7 @@ void R_DrawAliasModel (entity_t *e)
 	vec3_t		bbox[8];
 	image_t		*skin;
 
-	if ( !( e->flags & RF_WEAPONMODEL ) && !r_nocull->value )
+	if ( !( e->flags & RF_WEAPONMODEL ) && r_nocull->value < 2 )
 	{
 		if ( R_CullAliasModel( bbox, e ) )
 			return;
