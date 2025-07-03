@@ -803,22 +803,7 @@ static int qsort_compare( const void *arg1, const void *arg2 )
 	return ret;
 }
 
-#define MAX_VERTEXES 4000
-#define MAX_INDEXES (6*MAX_VERTEXES)
-struct vertexData_s
-{
-	float xyz[3];
-	float tex0[2];
-	float tex1[2];
-};
-
-struct drawbuff_s
-{
-	int numVertexes;
-	int numIndexes;
-	struct vertexData_s vertexes[MAX_VERTEXES];
-	unsigned short indexes[MAX_INDEXES];
-} g_drawBuff;
+struct drawbuff_s g_drawBuff;
 
 void R_RenderSurfs( qboolean two_textures )
 {

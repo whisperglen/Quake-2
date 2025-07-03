@@ -239,8 +239,12 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 	}
 	else
 	{
+		struct vertexData_s *vb;
+		unsigned short *ib;
+
 		while (1)
 		{
+			int strategy;
 			// get the vertex count and primitive type
 			count = *order++;
 			if (!count)
@@ -248,44 +252,102 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 			if (count < 0)
 			{
 				count = -count;
-				qglBegin (GL_TRIANGLE_FAN);
+				//qglBegin (GL_TRIANGLE_FAN);
+				strategy = GL_TRIANGLE_FAN;
 			}
 			else
 			{
-				qglBegin (GL_TRIANGLE_STRIP);
+				//qglBegin (GL_TRIANGLE_STRIP);
+				strategy = GL_TRIANGLE_STRIP;
 			}
+
+			int totalindexes = (3 * count) - 6;
+			R_CheckDrawBufferSpace( count, totalindexes, false );
+
+			int i;
+			int index = g_drawBuff.numVertexes;
+			ib = &g_drawBuff.indexes[g_drawBuff.numIndexes];
+			vb = &g_drawBuff.vertexes[g_drawBuff.numVertexes];
+			int start = index;
 
 			if ( currententity->flags & ( RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE ) )
 			{
-				do
+				for ( i = 0; i < count; i++ )
 				{
+					if ( i > 2 )
+					{
+						switch ( strategy )
+						{
+						case GL_TRIANGLE_FAN:
+							ib[0] = start;
+							ib[1] = index - 1;
+							ib += 2;
+							break;
+						case GL_TRIANGLE_STRIP: {
+							int uneven = index & 1;
+							ib[!uneven] = index -1;
+							ib[uneven] = index -2;
+							ib += 2;
+							break; }
+						}
+					}
+
 					index_xyz = order[2];
 					order += 3;
 
-					qglColor4f( shadelight[0], shadelight[1], shadelight[2], alpha);
-					qglVertex3fv (s_lerped[index_xyz]);
+					//qglColor4f( shadelight[0], shadelight[1], shadelight[2], alpha);
+					//qglVertex3fv (s_lerped[index_xyz]);
+					VectorCopy( s_lerped[index_xyz], vb->xyz );
 
-				} while (--count);
+				} //while (--count);
 			}
 			else
 			{
-				do
+				for ( i = 0; i < count; i++ )
 				{
+					if ( i > 2 )
+					{
+						switch ( strategy )
+						{
+						case GL_TRIANGLE_FAN:
+							ib[0] = start;
+							ib[1] = index - 1;
+							ib += 2;
+							break;
+						case GL_TRIANGLE_STRIP: {
+							int uneven = i & 1;
+							ib[!uneven] = index -1;
+							ib[uneven] = index -2;
+							ib += 2;
+							break; }
+						}
+					}
+					ib[0] = index++;
+
 					// texture coordinates come from the draw list
-					qglTexCoord2f (((float *)order)[0], ((float *)order)[1]);
+					//qglTexCoord2f (((float *)order)[0], ((float *)order)[1]);
+					vb->tex0[0] = ((float *)order)[0];
+					vb->tex0[1] = ((float *)order)[1];
 					index_xyz = order[2];
 					order += 3;
 
 					// normals and vertexes come from the frame list
 					l = shadedots[verts[index_xyz].lightnormalindex];
 					
-					qglColor4f (l* shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
-					qglVertex3fv (s_lerped[index_xyz]);
-				} while (--count);
+					//qglColor4f (l* shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
+					//qglVertex3fv (s_lerped[index_xyz]);
+					VectorCopy( s_lerped[index_xyz], vb->xyz );
+					vb++;
+					ib++;
+				} //while (--count);
 			}
 
-			qglEnd ();
+			g_drawBuff.numVertexes += count;
+			g_drawBuff.numIndexes += totalindexes;
+			//qglEnd ();
 		}
+
+		R_RenderSurfs( false );
 	}
 
 //	if ( currententity->flags & ( RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE ) )
@@ -705,7 +767,7 @@ void R_DrawAliasModel (entity_t *e)
 	// locate the proper data
 	//
 
-	c_alias_polys += paliashdr->num_tris;
+	c_alias_polys += 1;// paliashdr->num_tris;
 
 	//
 	// draw all the triangles

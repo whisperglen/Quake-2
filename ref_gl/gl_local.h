@@ -443,6 +443,28 @@ typedef struct
 extern glconfig_t  gl_config;
 extern glstate_t   gl_state;
 
+#define MAX_VERTEXES 4000
+#define MAX_INDEXES (6*MAX_VERTEXES)
+struct vertexData_s
+{
+	float xyz[3];
+	float tex0[2];
+	float tex1[2];
+};
+
+struct drawbuff_s
+{
+	int numVertexes;
+	int numIndexes;
+	struct vertexData_s vertexes[MAX_VERTEXES];
+	unsigned short indexes[MAX_INDEXES];
+};
+
+extern struct drawbuff_s  g_drawBuff;
+
+void R_CheckDrawBufferSpace( int vertexes, int indexes, qboolean two_textures );
+void R_RenderSurfs( qboolean two_textures );
+
 /*
 ====================================================================
 
