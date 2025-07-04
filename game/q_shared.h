@@ -156,10 +156,14 @@ extern long Q_ftol( float f );
 #define Q_ftol( f ) _mm_cvt_ss2si( _mm_set1_ps(f) )
 #endif
 
+#define vecmax(a,m)             ((a) > m ? m : (a))
+
 #define DotProduct(x,y)			(x[0]*y[0]+x[1]*y[1]+x[2]*y[2])
 #define VectorSubtract(a,b,c)	(c[0]=a[0]-b[0],c[1]=a[1]-b[1],c[2]=a[2]-b[2])
 #define VectorAdd(a,b,c)		(c[0]=a[0]+b[0],c[1]=a[1]+b[1],c[2]=a[2]+b[2])
 #define VectorCopy(a,b)			(b[0]=a[0],b[1]=a[1],b[2]=a[2])
+#define VectorCopyMax(a,b,m)	(b[0]=vecmax(a[0],m),b[1]=vecmax(a[1],m),b[2]=vecmax(a[2],m))
+#define VectorScaleP(v,s,o)     ((o)[0]=(v)[0]*(s),(o)[1]=(v)[1]*(s),(o)[2]=(v)[2]*(s))
 #define VectorClear(a)			(a[0]=a[1]=a[2]=0)
 #define VectorNegate(a,b)		(b[0]=-a[0],b[1]=-a[1],b[2]=-a[2])
 #define VectorSet(v, x, y, z)	(v[0]=(x), v[1]=(y), v[2]=(z))

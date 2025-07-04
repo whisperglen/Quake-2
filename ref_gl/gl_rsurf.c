@@ -813,6 +813,8 @@ void R_RenderSurfs( qboolean two_textures )
 
 		qglEnableClientState( GL_VERTEX_ARRAY );
 		qglVertexPointer( 3, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].xyz );
+		qglEnableClientState( GL_COLOR_ARRAY );
+		qglColorPointer( 4, GL_UNSIGNED_BYTE, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].clr.b );
 		qglClientActiveTexture( GL_TEXTURE0_ARB );
 		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		qglTexCoordPointer( 2, GL_FLOAT, sizeof( struct vertexData_s ), g_drawBuff.vertexes[0].tex0 );
@@ -830,6 +832,7 @@ void R_RenderSurfs( qboolean two_textures )
 			qglClientActiveTexture( GL_TEXTURE0_ARB );
 		}
 		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+		qglDisableClientState( GL_COLOR_ARRAY );
 		qglDisableClientState( GL_VERTEX_ARRAY );
 
 		g_drawBuff.numIndexes = 0;
@@ -882,6 +885,7 @@ void R_PopulateDrawBuffer( msurface_t* surf, qboolean is_dynamic, qboolean is_fl
 			}
 			ibuf[0] = index++;
 			VectorCopy( v, draw->xyz );
+			draw->clr.all = 0xffffffff;
 			draw->tex0[0] = v[3]+scroll;
 			draw->tex0[1] = v[4];
 			draw->tex1[0] = v[5];

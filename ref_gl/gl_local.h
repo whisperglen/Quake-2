@@ -443,11 +443,18 @@ typedef struct
 extern glconfig_t  gl_config;
 extern glstate_t   gl_state;
 
+typedef union colorinfo_u
+{
+	byte b[4];
+	unsigned all;
+} colorinfo_t;
+
 #define MAX_VERTEXES 4000
 #define MAX_INDEXES (6*MAX_VERTEXES)
 struct vertexData_s
 {
 	float xyz[3];
+	colorinfo_t  clr;
 	float tex0[2];
 	float tex1[2];
 };

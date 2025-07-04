@@ -1337,7 +1337,6 @@ int R_Init( void *hinstance, void *hWnd )
 			ri.Con_Printf( PRINT_ALL, "...using GL_SGIS_multitexture\n" );
 			qglMTexCoord2fSGIS = ( void * ) qwglGetProcAddress( "glMTexCoord2fSGIS" );
 			qglSelectTextureSGIS = ( void * ) qwglGetProcAddress( "glSelectTextureSGIS" );
-			qglClientActiveTexture = ( void * ) qwglGetProcAddress( "glClientActiveTextureARB" );
 		}
 		else
 		{
@@ -1348,6 +1347,8 @@ int R_Init( void *hinstance, void *hWnd )
 	{
 		ri.Con_Printf( PRINT_ALL, "...GL_SGIS_multitexture not found\n" );
 	}
+	//need to have this tied to the multitexture extension
+	qglClientActiveTexture = ( void * ) qwglGetProcAddress( "glClientActiveTextureARB" );
 #endif
 
 	GL_SetDefaultState();
