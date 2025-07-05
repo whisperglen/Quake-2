@@ -79,7 +79,7 @@ void GL_LerpVerts( int nverts, dtrivertx_t *v, dtrivertx_t *ov, dtrivertx_t *ver
 
 }
 
-void R_MeshFillBuffer(int* order, float alpha, dtrivertx_t* verts );
+void R_MeshBuildVertexBufferAndDraw(int* order, float alpha, dtrivertx_t* verts );
 
 /*
 =============
@@ -241,7 +241,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 	}
 	else
 	{
-		R_MeshFillBuffer( order, alpha, verts );
+		R_MeshBuildVertexBufferAndDraw( order, alpha, verts );
 	}
 
 //	if ( currententity->flags & ( RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE ) )
@@ -250,7 +250,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 		qglEnable( GL_TEXTURE_2D );
 }
 
-void R_MeshFillBuffer(int *order, float alpha, dtrivertx_t *verts)
+void R_MeshBuildVertexBufferAndDraw(int *order, float alpha, dtrivertx_t *verts)
 {
 	while ( 1 )
 	{
@@ -859,7 +859,7 @@ void R_DrawAliasModel (entity_t *e)
 		currententity->oldframe = 0;
 	}
 
-	if ( !r_lerpmodels->value )
+	if ( !r_lerpmodels->value || ( currententity->frame == currententity->oldframe ) )
 		currententity->backlerp = 0;
 	GL_DrawAliasFrameLerp (paliashdr, currententity->backlerp);
 

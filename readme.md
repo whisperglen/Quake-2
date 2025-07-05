@@ -1,11 +1,11 @@
 # What is this?
 I wanted to try the original idtech2 code with Remix, since it's open source, getting it in a working state means I could port changes to other games based on idtech2.
 
-### WIP:
-- use indexed DrawCalls: this means gathering all surfaces in a list, sorting by used texture, and batching draws, similar to how idtech3 does it;
-	- lowering the number of DrawCalls will allow setting r_novis 1 to draw all map polygons and prevent the frequent light leaking;
-	- not to mention removing the hit to FPS that r_nocull introduces :sad_cat:
-- so far static geometry has been batched and FPS has improved. However enemies roaming about still cause slowdown, so I need to draw each entity with less drawcalls (depends on no. of textures)
+### Changes:
+- static geometry is batched via texture id and drawn in a single drawcall; this allows setting r_novis 1 without causing severe slowdown in Remix
+- each entity (npc, flags, ammo, health, barrels etc.) is assembled in a vertex buffer and drawn with very few drawcalls, one for each 
+unique texture assigned to the model; with r_nocull 2 now affecting entities, again this prevents fps drop in Remix
+- in case of static entities lerping has been disabled to make the model's hashes stable for Remix
 
 ### Notes:
 - I'm using my QindieGL fork to run this with Remix
