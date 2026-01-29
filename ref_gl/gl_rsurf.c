@@ -1913,7 +1913,8 @@ void R_RecursiveWorldNode (mnode_t *node)
 
 		if (surf->texinfo->flags & SURF_SKY)
 		{	// just adds to visible sky bounds
-			R_AddSkySurface (surf);
+			//R_AddSkySurface (surf);
+			R_DrawFullSkybox();
 		}
 		else if (surf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
 		{	// add to the translucent chain
@@ -1963,7 +1964,8 @@ void R_RecursiveWorldNode (mnode_t *node)
 
 			if (surf->texinfo->flags & SURF_SKY)
 			{	// just adds to visible sky bounds
-				R_AddSkySurface (surf);
+				//R_AddSkySurface (surf);
+				R_DrawFullSkybox();
 			}
 			else if (surf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
 			{	// add to the translucent chain
@@ -2061,8 +2063,10 @@ void R_DrawWorld (void)
 	*/
 	DrawTextureChains ();
 	R_BlendLightmaps ();
-	
+
+	QGL_PUSH_DEBUGGROUP( 2, "DrawSkyBox" );
 	R_DrawSkyBox ();
+	QGL_POP_DEBUGGROUP();
 
 	R_DrawTriangleOutlines ();
 }

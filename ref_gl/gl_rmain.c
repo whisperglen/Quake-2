@@ -840,6 +840,9 @@ void R_RenderView (refdef_t *fd)
 		c_alias_polys = 0;
 	}
 
+	g_drawBuff.numIndexes = 0;
+	g_drawBuff.numVertexes = 0;
+
 	R_PushDlights ();
 
 	if (gl_finish->value)

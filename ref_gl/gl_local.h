@@ -304,6 +304,7 @@ void R_MarkLeaves (void);
 glpoly_t *WaterWarpPolyVerts (glpoly_t *p);
 void EmitWaterPolys (msurface_t *fa);
 void R_AddSkySurface (msurface_t *fa);
+void R_DrawFullSkybox (void);
 void R_ClearSkyBox (void);
 void R_DrawSkyBox (void);
 void R_MarkLights (dlight_t *light, int bit, mnode_t *node);

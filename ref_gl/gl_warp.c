@@ -259,7 +259,7 @@ void EmitWaterPolys (msurface_t *fa)
 //===================================================================
 
 
-vec3_t	skyclip[6] = {
+const vec3_t	skyclip[6] = {
 	{1,1,0},
 	{1,-1,0},
 	{0,-1,1},
@@ -270,7 +270,7 @@ vec3_t	skyclip[6] = {
 int	c_sky;
 
 // 1 = s, 2 = t, 3 = 2048
-int	st_to_vec[6][3] =
+const int	st_to_vec[6][3] =
 {
 	{3,-1,2},
 	{-3,1,2},
@@ -286,7 +286,7 @@ int	st_to_vec[6][3] =
 };
 
 // s = [0]/[2], t = [1]/[2]
-int	vec_to_st[6][3] =
+const int	vec_to_st[6][3] =
 {
 	{-2,3,1},
 	{2,3,-1},
@@ -501,7 +501,7 @@ void R_AddSkySurface (msurface_t *fa)
 	}
 }
 
-
+static qboolean skyfulldraw;
 /*
 ==============
 R_ClearSkyBox
@@ -511,10 +511,32 @@ void R_ClearSkyBox (void)
 {
 	int		i;
 
+	skyfulldraw = false;
 	for (i=0 ; i<6 ; i++)
 	{
 		skymins[0][i] = skymins[1][i] = 9999;
 		skymaxs[0][i] = skymaxs[1][i] = -9999;
+	}
+}
+
+/*
+==============
+R_DrawFullSkybox
+==============
+*/
+void R_DrawFullSkybox (void)
+{
+	if (!skyfulldraw)
+	{
+		skyfulldraw = true;
+		for (int i = 0; i < 6; i++)
+		{
+			// forces full sky to draw
+			skymins[0][i] = -1;
+			skymins[1][i] = -1;
+			skymaxs[0][i] = 1;
+			skymaxs[1][i] = 1;
+		}
 	}
 }
 
