@@ -1,0 +1,132 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    tags:
+      - 'v*'
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+      - "docs/*"
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+      - "docs/*"
+  release:
+    types: [published]
+
+env:
+  SOLUTION_FILE_PATH: ./quake2.sln
+  
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  msvc:
+    name: Windows ${{ matrix.arch }} ${{ matrix.build_type }} (${{ matrix.portable }})
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        arch: [x86]
+        build_type: [Release]
+
+    steps:
+      - uses: actions/checkout@v6
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/checkout@v6
+        if: github.event_name != 'pull_request'
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v3
+        
+      - name: Build
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        # Add additional options to the MSBuild command line here (like platform or verbosity level).
+        # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+        run: msbuild /m /p:Configuration=${{ matrix.build_type }} ${{env.SOLUTION_FILE_PATH}}
+
+      - name: Create artifact
+        run: .\package.bat ${{ matrix.build_type }}
+      
+      - uses: actions/upload-artifact@v7
+        if: ${{ matrix.build_type == 'Release' }}
+        with:
+          name: quake2-${{ matrix.arch }}-${{ matrix.build_type }}
+          path: ${{ github.workspace }}/bin/${{ matrix.build_type }}
+          if-no-files-found: error
+
+  create-latest:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [msvc]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: quake2-x86-Release
+          path: ./quake2-x86-Release
+
+      - name: Create binary archives
+        run: |
+          7z a -r quake2-x86.zip ./quake2-x86-Release/* '-x!msvcp*.*' '-x!vcruntime*.*' '-x!concrt*.*'
+
+      - name: Create latest build
+        uses: marvinpinto/action-automatic-releases@d68defdd11f9dcc7f52f35c1b7c236ee7513bcc1 # latest
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: Latest Build
+          files: |
+            *.zip
+            *.tar.gz
+
+  create-release:
+    if: github.event_name == 'release' || (github.event_name == 'push' && github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))
+    needs: [msvc]
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        include:
+          - artifact_dir: quake2-x86-Release
+            artifact_name: quake2-x86.zip
+            zip: true
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: quake2-x86-Release
+          path: ./quake2-x86-Release
+
+      - name: Create archive
+        run: |
+          7z a -r ${{ matrix.artifact_name }} ./${{ matrix.artifact_dir }}/* '-x!msvcp*.*' '-x!vcruntime*.*' '-x!concrt*.*'
+
+      - name: Upload archives
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file: ${{ matrix.artifact_name }}
