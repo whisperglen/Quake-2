@@ -22,6 +22,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void R_Clear (void);
 
+#define RMX_ADD_IMPL
+#define RMX_GET_PROC_ADDRESS(MOD,NAME) QGL_GetProcAddress((NAME))
+#include "../win32/qindie_rmx.h"
+
+static gameparamret_t RMX_implement_api(gameops_t op, gameparam_t p0, gameparam_t p1, gameparam_t p2);
+static void q2_flashlight_toggle();
+
 viddef_t	vid;
 
 refimport_t	ri;
@@ -79,6 +86,9 @@ cvar_t	*r_lerpmodels;
 cvar_t	*r_lefthand;
 
 cvar_t	*r_lightlevel;	// FIXME: This is a HACK to get the client's light level
+
+cvar_t  *r_rmx_dynamiclight;
+cvar_t  *r_rmx_coronas;
 
 cvar_t	*gl_nosubimage;
 cvar_t	*gl_allow_software;
@@ -843,6 +853,16 @@ void R_RenderView (refdef_t *fd)
 	g_drawBuff.numIndexes = 0;
 	g_drawBuff.numVertexes = 0;
 
+	dlight_t* dlights = r_newrefdef.dlights;
+	for (int i = 0; i < r_newrefdef.num_dlights; i++, dlights++)
+	{
+		rmx_light_add(LIGHT_DYNAMIC, i, dlights->origin, NULL, dlights->color, dlights->intensity);
+	}
+
+	float forward[3];
+	AngleVectors(r_newrefdef.viewangles, forward, NULL, NULL);
+	rmx_setplayerpos(r_newrefdef.vieworg, forward);
+
 	R_PushDlights ();
 
 	if (gl_finish->value)
@@ -1011,6 +1031,9 @@ void R_Register( void )
 
 	r_lightlevel = ri.Cvar_Get ("r_lightlevel", "0", 0);
 
+	r_rmx_coronas = ri.Cvar_Get("r_rmx_coronas", "0", CVAR_ARCHIVE);
+	r_rmx_dynamiclight = ri.Cvar_Get("r_rmx_dynamiclight", "0", CVAR_ARCHIVE);
+
 	gl_nosubimage = ri.Cvar_Get( "gl_nosubimage", "0", 0 );
 	gl_allow_software = ri.Cvar_Get( "gl_allow_software", "0", 0 );
 
@@ -1071,6 +1094,8 @@ void R_Register( void )
 	ri.Cmd_AddCommand( "screenshot", GL_ScreenShot_f );
 	ri.Cmd_AddCommand( "modellist", Mod_Modellist_f );
 	ri.Cmd_AddCommand( "gl_strings", GL_Strings_f );
+	ri.Cmd_AddCommand( "gl_strings", GL_Strings_f );
+	ri.Cmd_AddCommand( "rmx_flashlight_toggle", q2_flashlight_toggle);
 }
 
 /*
@@ -1131,7 +1156,7 @@ qboolean R_SetMode (void)
 R_Init
 ===============
 */
-int R_Init( void *hinstance, void *hWnd )
+qboolean R_Init( void *hinstance, void *hWnd )
 {	
 	char renderer_buffer[1000];
 	char vendor_buffer[1000];
@@ -1368,6 +1393,9 @@ int R_Init( void *hinstance, void *hWnd )
 	R_InitParticleTexture ();
 	Draw_InitLocal ();
 
+	rmx_interface_init(NULL);
+    rmx_set_game_api(RMX_implement_api);
+
 	err = qglGetError();
 	if ( err != GL_NO_ERROR )
 		ri.Con_Printf (PRINT_ALL, "glGetError() = 0x%x\n", err);
@@ -1509,6 +1537,17 @@ void R_BeginFrame( float camera_separation )
 	{
 		GL_TextureSolidMode( gl_texturesolidmode->string );
 		gl_texturesolidmode->modified = false;
+	}
+
+	if (r_rmx_dynamiclight->modified)
+	{
+		r_rmx_dynamiclight->modified = false;
+		rmx_lights_clear(LIGHT_DYNAMIC);
+	}
+	if (r_rmx_coronas->modified)
+	{
+		r_rmx_coronas->modified = false;
+		rmx_lights_clear(LIGHT_CORONA);
 	}
 
 	/*
@@ -1727,3 +1766,45 @@ void Com_Printf (char *fmt, ...)
 }
 
 #endif
+
+static gameparamret_t __cdecl RMX_implement_api(gameops_t op, gameparam_t p0, gameparam_t p1, gameparam_t p2)
+{
+	gameparamret_t ret = { 0 };
+
+	switch (op)
+	{
+	case OP_GETVAR: {
+		cvar_t* cv = ri.Cvar_Get(p0.strval, "0", 0);
+		ret.intval = (int)cv->value;
+		break;
+	}
+	case OP_SETVAR:
+		ri.Cvar_Set(p0.strval, p1.strval);
+		break;
+	case OP_EXECMD:
+		ri.Cmd_ExecuteText(EXEC_APPEND, p0.strval);
+		break;
+	case OP_CONPRINT: {
+		ri.Con_Printf(PRINT_ALL, "%s", p1.strval);
+		break;
+	}
+	case OP_DEACTMOUSE: {
+		//IN_DeactivateMouse is automatically called when in_mouse changes
+		break;
+	}
+	case OP_GETNORMALSTHRESHVAL:
+		ret.pfltval = 0;
+		break;
+	default:
+		ri.Con_Printf(PRINT_ALL, "Unsupported OP:%d\n", op);
+		break;
+	}
+
+	return ret;
+}
+
+static void q2_flashlight_toggle()
+{
+	rmx_flashlight_enable(-1);
+	ri.Cmd_ExecuteText(EXEC_APPEND, "play sound/weapons/noammo.wav");
+}

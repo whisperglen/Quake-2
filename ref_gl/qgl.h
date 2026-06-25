@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 qboolean QGL_Init( const char *dllname );
 void     QGL_Shutdown( void );
+void*   QGL_GetProcAddress( const char* name );
 
 #ifndef APIENTRY
 #  define APIENTRY

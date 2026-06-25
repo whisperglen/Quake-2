@@ -21,6 +21,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "gl_local.h"
 
+#include "../win32/qindie_rmx.h"
+
 model_t	*loadmodel;
 int		modfilelen;
 
@@ -1111,6 +1113,8 @@ void R_BeginRegistration (char *model)
 	r_oldviewcluster = -1;		// force markleafs
 
 	Com_sprintf (fullname, sizeof(fullname), "maps/%s.bsp", model);
+
+	rmx_begin_loading_map(model);
 
 	// explicitly free the old map if different
 	// this guarantees that mod_known[0] is the world map

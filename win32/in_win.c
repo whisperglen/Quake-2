@@ -422,7 +422,7 @@ void IN_Frame (void)
 	if (!mouseinitialized)
 		return;
 
-	if (!in_mouse || !in_appactive)
+	if (!in_mouse->value || !in_appactive)
 	{
 		IN_DeactivateMouse ();
 		return;
@@ -433,7 +433,7 @@ void IN_Frame (void)
 		|| cls.key_dest == key_menu)
 	{
 		// temporarily deactivate if in fullscreen
-		if (Cvar_VariableValue ("vid_fullscreen") == 0)
+		//if (Cvar_VariableValue ("vid_fullscreen") == 0)
 		{
 			IN_DeactivateMouse ();
 			return;

@@ -3024,6 +3024,11 @@ void QGL_Shutdown( void )
 #	pragma warning (disable : 4113 4133 4047 )
 #	define GPA( a ) GetProcAddress( glw_state.hinstOpenGL, a )
 
+void* QGL_GetProcAddress(const char* name)
+{
+	return GPA(name);
+}
+
 /*
 ** QGL_Init
 **

@@ -284,6 +284,7 @@ void V_AddBlend (float r, float g, float b, float a, float *v_blend);
 int 	R_Init( void *hinstance, void *hWnd );
 void	R_Shutdown( void );
 
+void R_SetGL2D(void);
 void R_RenderView (refdef_t *fd);
 void GL_ScreenShot_f (void);
 void R_DrawAliasModel (entity_t *e);
