@@ -481,7 +481,7 @@ typedef struct vidmode_s
 	int         mode;
 } vidmode_t;
 
-vidmode_t vid_modes[] =
+static vidmode_t vid_modes[] =
 {
 	{ "Mode 0: 320x240",   320, 240,   0 },
 	{ "Mode 1: 400x300",   400, 300,   1 },
@@ -495,13 +495,97 @@ vidmode_t vid_modes[] =
 	{ "Mode 9: 1600x1200", 1600, 1200, 9 }
 };
 
+static const char* resolutions[] =
+{
+	"[320 240  ]",
+	"[400 300  ]",
+	"[512 384  ]",
+	"[640 480  ]",
+	"[800 600  ]",
+	"[960 720  ]",
+	"[1024 768 ]",
+	"[1152 864 ]",
+	"[1280 960 ]",
+	"[1600 1200]",
+	0
+};
+
+#define MAX_MODES 100
+#define CHARS_PER_MODE 12
+static vidmode_t vid_modes_new[MAX_MODES];
+static int vid_num_modes_new = 0;
+static char vid_modes_new_resdata[MAX_MODES][CHARS_PER_MODE];
+static char* resolutions_new[MAX_MODES +1];
+
+void VID_InitModeList(void)
+{
+	DEVMODE dm, desk;
+	if (vid_num_modes_new == 0)
+	{
+		ZeroMemory(vid_modes_new, sizeof(vid_modes_new));
+		ZeroMemory(vid_modes_new_resdata, sizeof(vid_modes_new_resdata));
+		ZeroMemory(resolutions_new, sizeof(resolutions_new));
+
+		// desktop mode
+		ZeroMemory(&desk, sizeof(desk));
+		desk.dmSize = sizeof(desk);
+		if (!EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &desk))
+		{
+			return;
+		}
+
+		DWORD prevWidth = 0, prevHeight = 0;
+		// other modes
+		ZeroMemory(&dm, sizeof(dm));
+		dm.dmSize = sizeof(dm);
+		for (int i = 0; EnumDisplaySettings(NULL, i, &dm); i++)
+		{
+			if (vid_num_modes_new >= MAX_MODES) break;
+
+			if (dm.dmDisplayFrequency == desk.dmDisplayFrequency && dm.dmBitsPerPel == 32 &&
+				dm.dmPelsWidth >= 640 && dm.dmPelsHeight >= 480 &&
+				(prevWidth != dm.dmPelsWidth || prevHeight != dm.dmPelsHeight))
+			{
+				vid_modes_new[vid_num_modes_new].width = dm.dmPelsWidth;
+				vid_modes_new[vid_num_modes_new].height = dm.dmPelsHeight;
+				vid_modes_new[vid_num_modes_new].mode = vid_num_modes_new;
+				snprintf(&vid_modes_new_resdata[vid_num_modes_new][0], CHARS_PER_MODE, "[%d %d]", dm.dmPelsWidth, dm.dmPelsHeight);
+				resolutions_new[vid_num_modes_new] = &vid_modes_new_resdata[vid_num_modes_new][0];
+				vid_num_modes_new++;
+				prevWidth = dm.dmPelsWidth;
+				prevHeight = dm.dmPelsHeight;
+			}
+		}
+	}
+}
+
+const char* VID_GetResolutions(void)
+{
+	VID_InitModeList();
+
+	return (vid_num_modes_new ? resolutions_new : resolutions);
+}
+
 qboolean VID_GetModeInfo( int *width, int *height, int mode )
 {
-	if ( mode < 0 || mode >= VID_NUM_MODES )
-		return false;
+	VID_InitModeList();
 
-	*width  = vid_modes[mode].width;
-	*height = vid_modes[mode].height;
+	if (vid_num_modes_new)
+	{
+		if ( mode < 0 || mode >= vid_num_modes_new )
+			return false;
+
+		*width  = vid_modes_new[mode].width;
+		*height = vid_modes_new[mode].height;
+	}
+	else
+	{
+		if ( mode < 0 || mode >= VID_NUM_MODES )
+			return false;
+
+		*width  = vid_modes[mode].width;
+		*height = vid_modes[mode].height;
+	}
 
 	return true;
 }

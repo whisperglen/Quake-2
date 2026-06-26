@@ -208,20 +208,20 @@ static void CancelChanges( void *unused )
 */
 void VID_MenuInit( void )
 {
-	static const char *resolutions[] = 
-	{
-		"[320 240  ]",
-		"[400 300  ]",
-		"[512 384  ]",
-		"[640 480  ]",
-		"[800 600  ]",
-		"[960 720  ]",
-		"[1024 768 ]",
-		"[1152 864 ]",
-		"[1280 960 ]",
-		"[1600 1200]",
-		0
-	};
+	//static const char *resolutions[] = 
+	//{
+	//	"[320 240  ]",
+	//	"[400 300  ]",
+	//	"[512 384  ]",
+	//	"[640 480  ]",
+	//	"[800 600  ]",
+	//	"[960 720  ]",
+	//	"[1024 768 ]",
+	//	"[1152 864 ]",
+	//	"[1280 960 ]",
+	//	"[1600 1200]",
+	//	0
+	//};
 	static const char *refs[] =
 	{
 		"[software      ]",
@@ -301,7 +301,7 @@ void VID_MenuInit( void )
 		s_mode_list[i].generic.name = "video mode";
 		s_mode_list[i].generic.x = 0;
 		s_mode_list[i].generic.y = 10;
-		s_mode_list[i].itemnames = resolutions;
+		s_mode_list[i].itemnames = VID_GetResolutions();
 
 		s_screensize_slider[i].generic.type	= MTYPE_SLIDER;
 		s_screensize_slider[i].generic.x		= 0;

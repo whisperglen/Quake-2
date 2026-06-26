@@ -27,7 +27,7 @@ void R_Clear (void);
 #include "../win32/qindie_rmx.h"
 
 static gameparamret_t RMX_implement_api(gameops_t op, gameparam_t p0, gameparam_t p1, gameparam_t p2);
-static void q2_flashlight_toggle();
+static void q2_flashlight_toggle(void);
 
 viddef_t	vid;
 
@@ -1094,7 +1094,6 @@ void R_Register( void )
 	ri.Cmd_AddCommand( "screenshot", GL_ScreenShot_f );
 	ri.Cmd_AddCommand( "modellist", Mod_Modellist_f );
 	ri.Cmd_AddCommand( "gl_strings", GL_Strings_f );
-	ri.Cmd_AddCommand( "gl_strings", GL_Strings_f );
 	ri.Cmd_AddCommand( "rmx_flashlight_toggle", q2_flashlight_toggle);
 }
 
@@ -1414,6 +1413,7 @@ void R_Shutdown (void)
 	ri.Cmd_RemoveCommand ("screenshot");
 	ri.Cmd_RemoveCommand ("imagelist");
 	ri.Cmd_RemoveCommand ("gl_strings");
+	ri.Cmd_RemoveCommand ("rmx_flashlight_toggle");
 
 	Mod_FreeAll ();
 
@@ -1803,7 +1803,7 @@ static gameparamret_t __cdecl RMX_implement_api(gameops_t op, gameparam_t p0, ga
 	return ret;
 }
 
-static void q2_flashlight_toggle()
+static void q2_flashlight_toggle( void )
 {
 	rmx_flashlight_enable(-1);
 	ri.Cmd_ExecuteText(EXEC_APPEND, "play sound/weapons/noammo.wav");
