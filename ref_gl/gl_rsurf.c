@@ -469,6 +469,12 @@ void R_BlendLightmaps (void)
 	qglDepthMask( 1 );
 }
 
+static int clamp(int a, int lower, int upper) {
+    if (a < lower) return lower;
+    if (a > upper) return upper;
+    return a;
+}
+
 /*
 ================
 R_RenderBrushPoly
@@ -494,7 +500,9 @@ void R_RenderBrushPoly (msurface_t *fa)
 			        gl_state.inverse_intensity,
 					gl_state.inverse_intensity,
 					1.0F );
-		EmitWaterPolys (fa);
+		unsigned char rgb = clamp(Q_ftol(gl_state.inverse_intensity * 255.0f), 0, 255);
+		colorinfo_t color = { rgb ,rgb ,rgb , 255};
+		EmitWaterPolys (fa, color.all);
 		GL_TexEnv( GL_REPLACE );
 
 		return;
@@ -603,16 +611,25 @@ void R_DrawAlphaSurfaces (void)
 
 	for (s=r_alpha_surfaces ; s ; s=s->texturechain)
 	{
+		unsigned char alpha = 255;
+
 		GL_Bind(s->texinfo->image->texnum);
 		c_brush_polys++;
-		if (s->texinfo->flags & SURF_TRANS33)
+		if (s->texinfo->flags & SURF_TRANS33) {
 			qglColor4f (intens,intens,intens,0.33);
-		else if (s->texinfo->flags & SURF_TRANS66)
+			alpha = 84;
+		}
+		else if (s->texinfo->flags & SURF_TRANS66) {
 			qglColor4f (intens,intens,intens,0.66);
+			alpha = 168;
+		}
 		else
 			qglColor4f (intens,intens,intens,1);
+
+		unsigned char rgb = clamp(Q_ftol(intens * 255.0f), 0, 255);
+		colorinfo_t color = { rgb ,rgb ,rgb , alpha };
 		if (s->flags & SURF_DRAWTURB)
-			EmitWaterPolys (s);
+			EmitWaterPolys (s, color.all);
 		else
 			DrawGLPoly (s->polys);
 	}

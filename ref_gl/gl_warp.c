@@ -210,49 +210,86 @@ EmitWaterPolys
 Does a water warp on the pre-fragmented glpoly_t chain
 =============
 */
-void EmitWaterPolys (msurface_t *fa)
+void EmitWaterPolys (msurface_t *fa, unsigned int color)
 {
-	glpoly_t	*p, *bp;
-	float		*v;
-	int			i;
-	float		s, t, os, ot;
+	glpoly_t* p, * bp;
 	float		scroll;
 	float		rdt = r_newrefdef.time;
+	qboolean	render_flags = false;
 
 	if (fa->texinfo->flags & SURF_FLOWING)
-		scroll = -64 * ( (r_newrefdef.time*0.5) - (int)(r_newrefdef.time*0.5) );
+		scroll = -64.0f * ((rdt * 0.5f) - Q_ftol(rdt * 0.5f));
 	else
-		scroll = 0;
-	for (bp=fa->polys ; bp ; bp=bp->next)
+		scroll = 0.0f;
+
+	R_RenderSurfs(render_flags);
+
+	for (bp = fa->polys; bp; bp = bp->next)
 	{
 		p = bp;
 
-		qglBegin (GL_TRIANGLE_FAN);
-		for (i=0,v=p->verts[0] ; i<p->numverts ; i++, v+=VERTEXSIZE)
+		struct vertexData_s* vb;
+		unsigned short* ib;
+		unsigned alpha = 255;
+
+		int totalindexes = (3 * p->numverts) - 6;
+		R_CheckDrawBufferSpace(p->numverts, totalindexes, render_flags);
+
+		int i;
+		int index = g_drawBuff.numVertexes;
+		ib = &g_drawBuff.indexes[g_drawBuff.numIndexes];
+		vb = &g_drawBuff.vertexes[g_drawBuff.numVertexes];
+		int start = index;
+
+		//glBegin(GL_TRIANGLE_FAN);
+
+		float* v = p->verts[0];
+		for (i = 0; i < p->numverts; i++, v += VERTEXSIZE)
 		{
-			os = v[3];
-			ot = v[4];
+			if (i > 2)
+			{
+				ib[0] = start;
+				ib[1] = index - 1;
+				ib += 2;
+			}
+			ib[0] = index++;
+
+			vb->clr.all = color;
+
+			const float os = v[3];
+			const float ot = v[4];
 
 #if !id386
-			s = os + r_turbsin[(int)((ot*0.125+r_newrefdef.time) * TURBSCALE) & 255];
+			float s = os + r_turbsin[(int)((ot * 0.125f + rdt) * TURBSCALE) & 255];
 #else
-			s = os + r_turbsin[Q_ftol( ((ot*0.125+rdt) * TURBSCALE) ) & 255];
+			float s = os + r_turbsin[Q_ftol(((ot * 0.125f + rdt) * TURBSCALE)) & 255];
 #endif
 			s += scroll;
-			s *= (1.0/64);
+			s *= (1.0 / 64);
 
 #if !id386
-			t = ot + r_turbsin[(int)((os*0.125+rdt) * TURBSCALE) & 255];
+			float t = ot + r_turbsin[(int)((os * 0.125f + rdt) * TURBSCALE) & 255];
 #else
-			t = ot + r_turbsin[Q_ftol( ((os*0.125+rdt) * TURBSCALE) ) & 255];
+			float t = ot + r_turbsin[Q_ftol(((os * 0.125f + rdt) * TURBSCALE)) & 255];
 #endif
-			t *= (1.0/64);
+			t *= (1.0 / 64);
 
-			qglTexCoord2f (s, t);
-			qglVertex3fv (v);
+			//glTexCoord2f(s, t);
+			vb->tex0[0] = s;
+			vb->tex0[1] = t;
+
+			//glVertex3fv(v);
+			VectorCopy(v, vb->xyz);
+
+			vb++;
+			ib++;
 		}
-		qglEnd ();
+		//glEnd();
+		g_drawBuff.numVertexes += p->numverts;
+		g_drawBuff.numIndexes += totalindexes;
 	}
+
+	R_RenderSurfs(render_flags);
 }
 
 

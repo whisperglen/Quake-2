@@ -303,7 +303,7 @@ void R_RotateForEntity (entity_t *e);
 void R_MarkLeaves (void);
 
 glpoly_t *WaterWarpPolyVerts (glpoly_t *p);
-void EmitWaterPolys (msurface_t *fa);
+void EmitWaterPolys (msurface_t *fa, unsigned int color);
 void R_AddSkySurface (msurface_t *fa);
 void R_DrawFullSkybox (void);
 void R_ClearSkyBox (void);
